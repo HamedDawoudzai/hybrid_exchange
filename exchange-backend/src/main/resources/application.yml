@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: exchange-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/exchange_db
+    username: exchange_user
+    password: exchange_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+app:
+  jwt:
+    secret: your-256-bit-secret-key-here-make-it-long-and-secure-for-production-use
+    expiration: 86400000
+
+  finnhub:
+    api-key: ${FINNHUB_API_KEY:demo}
+    base-url: https://finnhub.io/api/v1
+
+  coinbase:
+    base-url: https://api.exchange.coinbase.com
+
