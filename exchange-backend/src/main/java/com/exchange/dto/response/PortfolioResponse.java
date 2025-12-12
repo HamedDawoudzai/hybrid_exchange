@@ -19,18 +19,17 @@ public class PortfolioResponse {
     private Long id;
     private String name;
     private String description;
-    private BigDecimal cashBalance;
     private BigDecimal totalValue;
     private List<HoldingResponse> holdings;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static PortfolioResponse fromEntity(Portfolio portfolio) {
+    public static PortfolioResponse fromEntity(Portfolio portfolio, BigDecimal totalValue) {
         return PortfolioResponse.builder()
                 .id(portfolio.getId())
                 .name(portfolio.getName())
                 .description(portfolio.getDescription())
-                .cashBalance(portfolio.getCashBalance())
+                .totalValue(totalValue)
                 .createdAt(portfolio.getCreatedAt())
                 .updatedAt(portfolio.getUpdatedAt())
                 .build();
@@ -41,7 +40,6 @@ public class PortfolioResponse {
                 .id(portfolio.getId())
                 .name(portfolio.getName())
                 .description(portfolio.getDescription())
-                .cashBalance(portfolio.getCashBalance())
                 .totalValue(totalValue)
                 .holdings(holdings)
                 .createdAt(portfolio.getCreatedAt())

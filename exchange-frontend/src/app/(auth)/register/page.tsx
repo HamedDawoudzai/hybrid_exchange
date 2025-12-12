@@ -1,23 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 
-/**
- * Register Page
- * User registration form.
- * 
- * TODO: Implement form validation
- * TODO: Handle registration errors
- * TODO: Add password confirmation
- * TODO: Redirect on success
- */
 export default function RegisterPage() {
-  const { register, isRegistering, registerError } = useAuth();
+  const { register, isRegistering, registerError, isAuthenticated } = useAuth();
+  const [didSubmit, setDidSubmit] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -28,8 +21,23 @@ export default function RegisterPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setDidSubmit(true);
     register(formData);
   };
+
+  useEffect(() => {
+    if (didSubmit && registerError) {
+      toast.error("Registration failed. Please try again.");
+      setDidSubmit(false);
+    }
+  }, [didSubmit, registerError]);
+
+  useEffect(() => {
+    if (didSubmit && !isRegistering && isAuthenticated) {
+      toast.success("Account created");
+      setDidSubmit(false);
+    }
+  }, [didSubmit, isRegistering, isAuthenticated]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
@@ -45,18 +53,14 @@ export default function RegisterPage() {
                 label="First Name"
                 type="text"
                 value={formData.firstName}
-                onChange={(e) =>
-                  setFormData({ ...formData, firstName: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 placeholder="John"
               />
               <Input
                 label="Last Name"
                 type="text"
                 value={formData.lastName}
-                onChange={(e) =>
-                  setFormData({ ...formData, lastName: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 placeholder="Doe"
               />
             </div>
@@ -64,9 +68,7 @@ export default function RegisterPage() {
               label="Username"
               type="text"
               value={formData.username}
-              onChange={(e) =>
-                setFormData({ ...formData, username: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               placeholder="johndoe"
               required
             />
@@ -74,9 +76,7 @@ export default function RegisterPage() {
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="john@example.com"
               required
             />
@@ -84,17 +84,13 @@ export default function RegisterPage() {
               label="Password"
               type="password"
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Min 6 characters"
               required
             />
 
             {registerError && (
-              <p className="text-sm text-red-500">
-                Registration failed. Please try again.
-              </p>
+              <p className="text-sm text-red-500">Registration failed. Please try again.</p>
             )}
 
             <Button type="submit" className="w-full" isLoading={isRegistering}>

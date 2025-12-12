@@ -6,6 +6,7 @@ import com.exchange.entity.Asset;
 import com.exchange.entity.Holding;
 import com.exchange.entity.Order;
 import com.exchange.entity.Portfolio;
+import com.exchange.repository.UserRepository;
 import com.exchange.enums.OrderStatus;
 import com.exchange.enums.OrderType;
 import com.exchange.exception.BadRequestException;
@@ -36,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final PortfolioRepository portfolioRepository;
     private final HoldingRepository holdingRepository;
+    private final UserRepository userRepository;
     private final AssetService assetService;
     private final PriceService priceService;
 
@@ -44,6 +46,9 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse placeOrder(Long userId, OrderRequest request) {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(request.getPortfolioId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", request.getPortfolioId()));
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
         Asset asset = assetService.findBySymbol(request.getSymbol());
 
@@ -54,13 +59,13 @@ public class OrderServiceImpl implements OrderService {
                 .setScale(4, RoundingMode.HALF_UP);
 
         if (request.getType() == OrderType.BUY) {
-            if (portfolio.getCashBalance().compareTo(totalAmount) < 0) {
+            if (user.getCashBalance().compareTo(totalAmount) < 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient balance. Required: %s, Available: %s",
-                                totalAmount, portfolio.getCashBalance()));
+                                totalAmount, user.getCashBalance()));
             }
 
-            portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalAmount));
+            user.setCashBalance(user.getCashBalance().subtract(totalAmount));
 
             Holding holding = holdingRepository.findByPortfolioIdAndAssetId(
                             portfolio.getId(), asset.getId())
@@ -104,12 +109,13 @@ public class OrderServiceImpl implements OrderService {
                 holdingRepository.save(holding);
             }
 
-            portfolio.setCashBalance(portfolio.getCashBalance().add(totalAmount));
+            user.setCashBalance(user.getCashBalance().add(totalAmount));
 
         } else {
             throw new BadRequestException("Invalid order type: " + request.getType());
         }
 
+        userRepository.save(user);
         portfolioRepository.save(portfolio);
 
         Order order = Order.builder()
@@ -122,7 +128,7 @@ public class OrderServiceImpl implements OrderService {
                 .totalAmount(totalAmount)
                 .build();
 
-        Order savedOrder = Objects.requireNonNull(orderRepository.save(order), "saved order must not be null");
+        Order savedOrder = Objects.requireNonNull(orderRepository.save(Objects.requireNonNull(order, "order must not be null")), "saved order must not be null");
 
         log.info("Order placed successfully: Order ID {}, User ID {}, Type {}, Symbol {}, Quantity {}",
                 savedOrder.getId(), userId, request.getType(), request.getSymbol(), request.getQuantity());
@@ -149,7 +155,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(Long userId, Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findById(Objects.requireNonNull(orderId, "orderId must not be null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
         if (!order.getPortfolio().getUser().getId().equals(userId)) {

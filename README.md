@@ -1,45 +1,39 @@
 # HybridExchange
 
-A hybrid stock + crypto exchange platform demonstrating full-stack development with Java Spring Boot backend and Next.js frontend.
+A hybrid stock + crypto exchange with a Spring Boot backend and Next.js frontend.
 
-## 🎯 Project Status
+## 🎯 Current State
 
-**Current State:** Project structure with skeleton implementations
-
-All files contain placeholder/TODO implementations ready to be developed on feature branches. This allows for a clean, professional commit history demonstrating incremental development.
+- Backend: Implemented JWT auth, Redis-backed JWT blacklist, rate limiting, price caching, Redis serialization fixes, Coinbase/Finnhub price integrations, seed data, improved error handling, and `.env` support. End-to-end flows for register/login/logout, prices (stock/crypto), portfolios (create/deposit/delete), and orders.
+- Frontend: Next.js App Router with dark/glass UI, auth flows (login/register), portfolios (list/detail/create), trading (assets list, symbol page with live price/history and orders), orders history, charts via Recharts, toasts via Sonner, React Query + Zustand state, Axios API client with auth header.
 
 ## 🏗️ Architecture
 
 ```
 hybrid_exchange/
 ├── exchange-backend/     # Spring Boot REST API (port 8080)
-├── exchange-frontend/    # Next.js App (port 3000)
+├── exchange-frontend/    # Next.js app (port 3000)
 └── docker-compose.yml    # PostgreSQL + Redis
 ```
 
 ## 🚀 Tech Stack
 
-### Backend
-- Java 17+
-- Spring Boot 3.2+
-- Spring Security + JWT Authentication
-- Spring Data JPA
-- PostgreSQL
-- Redis (caching)
+**Backend**
+- Java 17+, Spring Boot 3.2+
+- Spring Security + JWT, Redis (cache + blacklist + rate limiting)
+- PostgreSQL, Spring Data JPA
+- WebClient for Finnhub/Coinbase
 - Maven
 
-### Frontend
-- Next.js 14 (App Router)
-- React 18
-- TypeScript
-- TailwindCSS
-- Zustand (state management)
-- TanStack Query (data fetching)
-- Recharts (charts)
+**Frontend**
+- Next.js 14 (App Router), React 18, TypeScript
+- TailwindCSS, Recharts, Sonner (toasts)
+- Zustand (state), TanStack Query (data fetching)
+- Axios client with JWT header
 
-### External APIs
-- [Finnhub](https://finnhub.io/) - Stock prices (60 calls/min free tier)
-- [Coinbase Exchange API](https://docs.cloud.coinbase.com/exchange/reference) - Crypto prices (free, no API key needed)
+**External APIs**
+- Finnhub (stock prices)
+- Coinbase Exchange (crypto prices)
 
 ## 📋 Prerequisites
 
@@ -48,213 +42,92 @@ hybrid_exchange/
 - Docker & Docker Compose
 - Maven 3.8+
 
-## 🛠️ Setup Instructions
+## 🛠️ Setup
 
-### 1. Start Infrastructure (PostgreSQL + Redis)
-
+### 1) Infra (Postgres + Redis)
 ```bash
 docker-compose up -d
+# Postgres on 5432, Redis on 6379
 ```
 
-This starts:
-- PostgreSQL on port 5432
-- Redis on port 6379
-
-### 2. Backend Setup
-
+### 2) Backend
 ```bash
 cd exchange-backend
-
-# Install dependencies and build
 mvn clean install
-
-# Run the application
 mvn spring-boot:run
+# Runs on http://localhost:8080
 ```
 
-The backend will start on `http://localhost:8080`
-
-### 3. Frontend Setup
-
+### 3) Frontend
 ```bash
 cd exchange-frontend
-
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
+# Runs on http://localhost:3000
 ```
 
-The frontend will start on `http://localhost:3000`
+## 🔧 Environment
 
-## 📁 Project Structure
-
-### Backend (MVC Architecture)
-
+Create `.env` in `exchange-backend` (or export env vars):
 ```
-exchange-backend/src/main/java/com/exchange/
-├── ExchangeApplication.java    # Main entry point
-├── config/                     # Configuration classes
-│   ├── SecurityConfig.java     # TODO: JWT security setup
-│   ├── CorsConfig.java         # TODO: CORS configuration
-│   ├── RedisConfig.java        # TODO: Redis cache setup
-│   └── WebClientConfig.java    # TODO: External API clients
-├── controller/                 # REST controllers (skeleton)
-├── service/                    # Business logic (skeleton)
-│   └── impl/                   # Service implementations (skeleton)
-├── repository/                 # Data access layer
-├── entity/                     # JPA entities
-├── dto/                        # Data transfer objects
-├── security/                   # JWT authentication (skeleton)
-└── exception/                  # Exception handling
+# Backend
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/exchange_db
+SPRING_DATASOURCE_USERNAME=exchange_user
+SPRING_DATASOURCE_PASSWORD=exchange_password
+
+app.jwt.secret=change-me
+app.jwt.expiration=86400000
+
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+
+app.finnhub.api-key=YOUR_FINNHUB_KEY
+app.finnhub.base-url=https://finnhub.io/api/v1
+app.coinbase.base-url=https://api.exchange.coinbase.com
 ```
 
-## 🔧 Environment (Backend)
+Frontend uses `/api` rewrites to the backend; no API keys stored in the frontend.
 
-Set these properties (e.g., in `application.yml` or env vars):
+## 🌱 Database
 
-- `app.jwt.secret` / `app.jwt.expiration` – JWT signing key & lifetime (ms)
-- `app.finnhub.base-url`, `app.finnhub.api-key` – stock price API
-- `app.coinbase.base-url` – crypto price API base (e.g., https://api.exchange.coinbase.com)
-- `spring.redis.host` / `spring.redis.port` – Redis for caching, token blacklist, rate limiting
+- Schema: users, assets, portfolios, holdings, orders (status/type as varchar).
+- Seed script `seed_all.sql` truncates and seeds users/assets/portfolios/holdings/orders.
 
-A running Redis instance is required for JWT blacklist, rate limiting, and price caching.
+## 🔌 Backend Highlights
 
-### Frontend (Next.js App Router)
+- JWT auth with blacklist (Redis) + logout invalidation
+- Rate limiting (Redis) on auth/price endpoints
+- Price caching (Redis), proper Java time serialization
+- Finnhub (stocks) + Coinbase (crypto) live prices and OHLC
+- Portfolio deposit/delete handling with better errors
 
-```
-exchange-frontend/src/
-├── app/                        # Next.js pages (skeleton)
-├── components/                 # React components (skeleton)
-│   ├── ui/                     # Reusable UI components
-│   ├── layout/                 # Layout components
-│   ├── charts/                 # Chart components
-│   ├── portfolio/              # Portfolio components
-│   └── trade/                  # Trade components
-├── hooks/                      # Custom React hooks (skeleton)
-├── store/                      # Zustand stores (skeleton)
-├── lib/                        # Utilities
-│   ├── api.ts                  # API client (skeleton)
-│   └── utils.ts                # Helper functions
-└── types/                      # TypeScript types
-```
+## 🎨 Frontend Highlights
 
-## 🌿 Development Workflow
-
-This project follows a feature-branch workflow for professional development:
-
-### Initial Setup
-
-```bash
-# Initialize git repository
-git init
-git add .
-git commit -m "chore: initial project structure with skeleton implementations"
-git remote add origin https://github.com/HamedDawoudzai/hybrid_exchange.git
-git push -u origin main
-```
-
-### Feature Development
-
-```bash
-# Create feature branch
-git checkout -b feature/auth-implementation
-
-# Make changes...
-git add .
-git commit -m "feat: implement user registration"
-git commit -m "feat: implement user login with JWT"
-git commit -m "feat: add JWT token validation"
-
-# Push and create PR
-git push origin feature/auth-implementation
-```
-
-### Suggested Development Order
-
-| Branch | Description | Key Files |
-|--------|-------------|-----------|
-| `feature/auth` | JWT Authentication | SecurityConfig, JwtTokenProvider, AuthService |
-| `feature/portfolio` | Portfolio CRUD | PortfolioService, PortfolioController |
-| `feature/assets` | Asset management | AssetService, data seeding |
-| `feature/prices` | Price integration | FinnhubService, CoinbaseService, PriceService |
-| `feature/orders` | Order processing | OrderService, balance management |
-| `feature/frontend-auth` | Frontend auth flow | useAuth hook, auth store, login/register pages |
-| `feature/frontend-portfolio` | Frontend portfolios | usePortfolio hook, portfolio pages |
-| `feature/frontend-trade` | Frontend trading | price hooks, trade pages, charts |
-| `feature/ui-polish` | UI improvements | Styling, animations, responsive design |
-
-## 🗄️ Database Schema
-
-### Entities
-
-- **User**: User accounts with authentication
-- **Portfolio**: User's portfolios with cash balance
-- **Asset**: Stocks and cryptocurrencies
-- **Holding**: Portfolio-asset relationship with quantity
-- **Order**: Buy/sell transactions
-
-### Entity Relationships
-
-```
-User 1:N Portfolio
-Portfolio 1:N Holding
-Portfolio 1:N Order
-Asset 1:N Holding
-Asset 1:N Order
-```
-
-## 🔌 API Endpoints (To Be Implemented)
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-
-### Portfolio
-- `GET /api/portfolios` - Get user portfolios
-- `POST /api/portfolios` - Create portfolio
-- `GET /api/portfolios/{id}` - Get portfolio details
-- `POST /api/portfolios/{id}/deposit` - Deposit funds
-- `DELETE /api/portfolios/{id}` - Delete portfolio
-
-### Assets
-- `GET /api/assets` - Get all assets
-- `GET /api/assets/stocks` - Get stocks only
-- `GET /api/assets/crypto` - Get crypto only
-- `GET /api/assets/{symbol}` - Get asset details
-
-### Orders
-- `POST /api/orders` - Place order
-- `GET /api/orders` - Get user orders
-- `GET /api/orders/portfolio/{id}` - Get portfolio orders
-
-### Prices (Public)
-- `GET /api/prices/stock/{symbol}` - Get stock price
-- `GET /api/prices/crypto/{symbol}` - Get crypto price
-- `GET /api/prices/stock/{symbol}/history` - Get stock history
-- `GET /api/prices/crypto/{symbol}/history` - Get crypto history
+- Auth: login/register, JWT header via Axios, Zustand store, toasts on success/fail
+- Portfolios: list, detail, create (modal), holdings display
+- Trading: assets list with filters/search; symbol page with live price/history, order placement per portfolio
+- Orders: user-wide history with sorting
+- UI: dark/glass theme, responsive, Recharts price chart, Sonner toasts
 
 ## 🧪 Testing
 
-### Backend
+Backend:
 ```bash
 cd exchange-backend
 mvn test
 ```
 
-### Frontend
+Frontend:
 ```bash
 cd exchange-frontend
 npm run lint
 npm run build
 ```
 
-## 📜 License
+## 🔜 Nice-to-Haves
 
-This is a portfolio project for demonstration purposes.
-
-## 🤝 Author
-
-Hamed Dawoudzai - [GitHub](https://github.com/HamedDawoudzai)
+- Auth guard for protected routes (redirect to /login)
+- Mobile drawer for header nav
+- Client-side validation (Zod) on forms
+- ReactQueryDevtools in dev
+- Advanced chart types (candles/ohlc) if needed

@@ -6,20 +6,13 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-/**
- * Input Component
- * Reusable input field with label and error display.
- * 
- * TODO: Implement input styles
- * TODO: Add focus states
- * TODO: Add error states
- */
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, type = "text", ...props }, ref) => {
+    const errorClasses = error ? "border-rose-500/70 focus:ring-rose-500" : "";
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1">
         {label && (
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-xs uppercase tracking-[0.15em] text-slate-400">
             {label}
           </label>
         )}
@@ -27,14 +20,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           type={type}
           ref={ref}
           className={cn(
-            "w-full px-3 py-2 border rounded-lg",
-            "focus:outline-none focus:ring-2",
-            // TODO: Add theme-specific styles
+            "w-full rounded-lg border border-slate-800/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100",
+            "placeholder:text-slate-500",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500",
+            "hover:border-slate-700",
+            errorClasses,
             className
           )}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+        {error && <p className="text-xs text-rose-400">{error}</p>}
       </div>
     );
   }

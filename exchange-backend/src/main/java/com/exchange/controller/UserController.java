@@ -2,6 +2,8 @@ package com.exchange.controller;
 
 import com.exchange.dto.response.ApiResponse;
 import com.exchange.dto.response.UserResponse;
+import com.exchange.dto.request.DepositRequest;
+import com.exchange.exception.BadRequestException;
 import com.exchange.security.UserPrincipal;
 import com.exchange.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
+
+    private static final BigDecimal MAX_DEPOSIT = new BigDecimal("1000000"); // optional dummy cap
 
     private final UserService userService;
 
@@ -21,5 +27,22 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserResponse user = userService.getCurrentUser(userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    @PostMapping("/cash/deposit")
+    public ResponseEntity<ApiResponse<UserResponse>> depositCash(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody @jakarta.validation.Valid DepositRequest request) {
+
+        BigDecimal amount = request.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Deposit amount must be positive");
+        }
+        if (amount.compareTo(MAX_DEPOSIT) > 0) {
+            throw new BadRequestException("Deposit amount exceeds the allowed limit");
+        }
+
+        UserResponse user = userService.depositCash(userPrincipal.getId(), amount);
+        return ResponseEntity.ok(ApiResponse.success("Deposit successful", user));
     }
 }

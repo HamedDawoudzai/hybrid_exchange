@@ -1,67 +1,69 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-/**
- * Home Page
- * Landing page with hero section and features.
- * 
- * TODO: Style hero section
- * TODO: Add feature cards
- * TODO: Add animations
- */
 export default function HomePage() {
   return (
-    <div className="relative">
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-24 text-center">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6">
-          Trade Stocks & Crypto
-          <br />
-          All in One Place
-        </h1>
-
-        <p className="text-xl max-w-2xl mx-auto mb-10">
-          HybridExchange brings together traditional stock trading and
-          cryptocurrency markets into a single, unified platform.
-        </p>
-
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/register">
-            <Button size="lg">Get Started</Button>
-          </Link>
-          <Link href="/login">
-            <Button variant="outline" size="lg">
-              Sign In
-            </Button>
-          </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-50">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -left-32 -top-32 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
+        </div>
+        <div className="relative container mx-auto px-4 py-24 text-center space-y-8">
+          <div className="inline-flex items-center rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100">
+            HybridExchange
+          </div>
+          <h1 className="text-4xl md:text-6xl font-semibold leading-tight text-slate-50">
+            Trade Stocks & Crypto
+            <br />
+            in one unified platform
+          </h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto text-slate-300">
+            Unified market data from Finnhub and Coinbase, multi-portfolio management,
+            and secure trading with JWT auth.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link href="/register">
+              <Button size="lg" className="px-6">
+                Get Started
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" size="lg" className="px-6">
+                Sign In
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Section - TODO: Implement feature cards */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="rounded-xl p-6 border">
-            <h3 className="text-xl font-semibold mb-2">Real-Time Prices</h3>
-            <p>
-              Get live market data from Finnhub and Coinbase APIs.
-            </p>
-          </div>
-
-          <div className="rounded-xl p-6 border">
-            <h3 className="text-xl font-semibold mb-2">Portfolio Management</h3>
-            <p>
-              Create multiple portfolios and track your investments.
-            </p>
-          </div>
-
-          <div className="rounded-xl p-6 border">
-            <h3 className="text-xl font-semibold mb-2">Secure Trading</h3>
-            <p>
-              JWT authentication and secure API design.
-            </p>
-          </div>
+      {/* Features */}
+      <section className="container mx-auto px-4 pb-16">
+        <div className="grid gap-4 md:grid-cols-3">
+          <FeatureCard
+            title="Real-Time Prices"
+            body="Live stock and crypto quotes powered by Finnhub and Coinbase APIs."
+          />
+          <FeatureCard
+            title="Portfolio Control"
+            body="Create multiple portfolios, track balances, holdings, and orders."
+          />
+          <FeatureCard
+            title="Secure Trading"
+            body="JWT authentication, rate limiting, and Redis-backed session/token controls."
+          />
         </div>
       </section>
+    </div>
+  );
+}
+
+function FeatureCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-800/70 bg-white/5 backdrop-blur-xl shadow-lg p-6 space-y-2">
+      <h3 className="text-xl font-semibold text-slate-50">{title}</h3>
+      <p className="text-sm text-slate-300">{body}</p>
     </div>
   );
 }

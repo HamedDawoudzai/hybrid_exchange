@@ -1,32 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 
-/**
- * Login Page
- * User login form with email/username and password.
- * 
- * TODO: Implement form validation
- * TODO: Handle login errors
- * TODO: Add loading state
- * TODO: Redirect on success
- */
 export default function LoginPage() {
-  const { login, isLoggingIn, loginError } = useAuth();
+  const { login, isLoggingIn, loginError, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     usernameOrEmail: "",
     password: "",
   });
 
+  useEffect(() => {
+    if (loginError) {
+      toast.error("Login failed. Check your credentials and try again.");
+    }
+  }, [loginError]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(formData);
+    login(formData); // no callbacks; toasts handled by effects
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // In case login was already successful from store rehydration
+      toast.success("Logged in successfully");
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -41,9 +46,7 @@ export default function LoginPage() {
               label="Username or Email"
               type="text"
               value={formData.usernameOrEmail}
-              onChange={(e) =>
-                setFormData({ ...formData, usernameOrEmail: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, usernameOrEmail: e.target.value })}
               placeholder="Enter your username or email"
               required
             />
@@ -51,17 +54,13 @@ export default function LoginPage() {
               label="Password"
               type="password"
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Enter your password"
               required
             />
 
             {loginError && (
-              <p className="text-sm text-red-500">
-                Invalid credentials. Please try again.
-              </p>
+              <p className="text-sm text-red-500">Invalid credentials. Please try again.</p>
             )}
 
             <Button type="submit" className="w-full" isLoading={isLoggingIn}>

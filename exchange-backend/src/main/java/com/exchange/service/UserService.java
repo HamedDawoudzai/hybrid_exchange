@@ -3,6 +3,8 @@ package com.exchange.service;
 import com.exchange.dto.response.UserResponse;
 import com.exchange.entity.User;
 
+import java.math.BigDecimal;
+
 public interface UserService {
 
     User findById(Long id);
@@ -16,5 +18,6 @@ public interface UserService {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
-}
 
+    UserResponse depositCash(Long userId, BigDecimal amount);
+}
