@@ -25,23 +25,23 @@ public class PortfolioController {
     public ResponseEntity<ApiResponse<PortfolioResponse>> createPortfolio(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CreatePortfolioRequest request) {
-        // TODO: Implement create portfolio endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        PortfolioResponse portfolio = portfolioService.createPortfolio(userPrincipal.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Portfolio created successfully", portfolio));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PortfolioResponse>>> getUserPortfolios(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        // TODO: Implement get user portfolios endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<PortfolioResponse> portfolios = portfolioService.getUserPortfolios(userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(portfolios));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PortfolioResponse>> getPortfolio(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        // TODO: Implement get portfolio endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        PortfolioResponse portfolio = portfolioService.getPortfolioWithHoldings(userPrincipal.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success(portfolio));
     }
 
     @PostMapping("/{id}/deposit")
@@ -49,16 +49,15 @@ public class PortfolioController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id,
             @Valid @RequestBody DepositRequest request) {
-        // TODO: Implement deposit endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        PortfolioResponse portfolio = portfolioService.deposit(userPrincipal.getId(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("Deposit successful", portfolio));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePortfolio(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        // TODO: Implement delete portfolio endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        portfolioService.deletePortfolio(userPrincipal.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Portfolio deleted successfully", null));
     }
 }
-

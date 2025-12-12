@@ -20,14 +20,14 @@ public class PriceController {
 
     @GetMapping("/stock/{symbol}")
     public ResponseEntity<ApiResponse<PriceResponse>> getStockPrice(@PathVariable String symbol) {
-        // TODO: Implement get stock price endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        PriceResponse price = priceService.getPrice(symbol, AssetType.STOCK);
+        return ResponseEntity.ok(ApiResponse.success(price));
     }
 
     @GetMapping("/crypto/{symbol}")
     public ResponseEntity<ApiResponse<PriceResponse>> getCryptoPrice(@PathVariable String symbol) {
-        // TODO: Implement get crypto price endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        PriceResponse price = priceService.getPrice(symbol, AssetType.CRYPTO);
+        return ResponseEntity.ok(ApiResponse.success(price));
     }
 
     @GetMapping("/stock/{symbol}/history")
@@ -36,8 +36,8 @@ public class PriceController {
             @RequestParam(defaultValue = "D") String resolution,
             @RequestParam long from,
             @RequestParam long to) {
-        // TODO: Implement get stock history endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<PriceResponse> history = priceService.getHistoricalPrices(symbol, AssetType.STOCK, resolution, from, to);
+        return ResponseEntity.ok(ApiResponse.success(history));
     }
 
     @GetMapping("/crypto/{symbol}/history")
@@ -46,16 +46,15 @@ public class PriceController {
             @RequestParam(defaultValue = "3600") String granularity,
             @RequestParam long from,
             @RequestParam long to) {
-        // TODO: Implement get crypto history endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<PriceResponse> history = priceService.getHistoricalPrices(symbol, AssetType.CRYPTO, granularity, from, to);
+        return ResponseEntity.ok(ApiResponse.success(history));
     }
 
     @PostMapping("/batch")
     public ResponseEntity<ApiResponse<Map<String, PriceResponse>>> getBatchPrices(
             @RequestBody List<String> symbols,
             @RequestParam AssetType type) {
-        // TODO: Implement batch prices endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        Map<String, PriceResponse> prices = priceService.getPrices(symbols, type);
+        return ResponseEntity.ok(ApiResponse.success(prices));
     }
 }
-
