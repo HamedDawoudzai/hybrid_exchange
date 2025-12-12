@@ -19,8 +19,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        // TODO: Implement get current user endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        UserResponse user = userService.getCurrentUser(userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(user));
     }
 }
-

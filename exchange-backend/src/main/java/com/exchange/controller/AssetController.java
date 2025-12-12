@@ -19,26 +19,25 @@ public class AssetController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AssetResponse>>> getAllAssets() {
-        // TODO: Implement get all assets endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<AssetResponse> assets = assetService.getAllAssets();
+        return ResponseEntity.ok(ApiResponse.success(assets));
     }
 
     @GetMapping("/stocks")
     public ResponseEntity<ApiResponse<List<AssetResponse>>> getStocks() {
-        // TODO: Implement get stocks endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<AssetResponse> stocks = assetService.getAssetsByType(AssetType.STOCK);
+        return ResponseEntity.ok(ApiResponse.success(stocks));
     }
 
     @GetMapping("/crypto")
     public ResponseEntity<ApiResponse<List<AssetResponse>>> getCrypto() {
-        // TODO: Implement get crypto endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<AssetResponse> crypto = assetService.getAssetsByType(AssetType.CRYPTO);
+        return ResponseEntity.ok(ApiResponse.success(crypto));
     }
 
     @GetMapping("/{symbol}")
     public ResponseEntity<ApiResponse<AssetResponse>> getAsset(@PathVariable String symbol) {
-        // TODO: Implement get asset endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        AssetResponse asset = assetService.getAssetBySymbol(symbol);
+        return ResponseEntity.ok(ApiResponse.success(asset));
     }
 }
-

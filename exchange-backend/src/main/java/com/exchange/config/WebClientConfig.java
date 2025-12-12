@@ -1,5 +1,6 @@
 package com.exchange.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,15 +12,23 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
+    @Value("${app.finnhub.base-url}")
+    private String finnhubBaseUrl;
+
+    @Value("${app.coinbase.base-url}")
+    private String coinbaseBaseUrl;
+
     @Bean
     public WebClient finnhubWebClient() {
-        // TODO: Configure WebClient for Finnhub API
-        throw new UnsupportedOperationException("Not implemented yet");
+        return WebClient.builder()
+                .baseUrl(finnhubBaseUrl)
+                .build();
     }
 
     @Bean
     public WebClient coinbaseWebClient() {
-        // TODO: Configure WebClient for Coinbase API
-        throw new UnsupportedOperationException("Not implemented yet");
+        return WebClient.builder()
+                .baseUrl(coinbaseBaseUrl)
+                .build();
     }
 }

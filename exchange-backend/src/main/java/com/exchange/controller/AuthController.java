@@ -19,20 +19,20 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        // TODO: Implement login endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        AuthResponse authResponse = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
     }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        // TODO: Implement register endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        AuthResponse authResponse = authService.register(request);
+        return ResponseEntity.ok(ApiResponse.success("Registration successful", authResponse));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String token) {
-        // TODO: Implement logout endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
+        authService.logout(jwt);
+        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
     }
 }
-

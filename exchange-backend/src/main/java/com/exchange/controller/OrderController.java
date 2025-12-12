@@ -24,31 +24,30 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody OrderRequest request) {
-        // TODO: Implement place order endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        OrderResponse orderResponse = orderService.placeOrder(userPrincipal.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Order placed successfully", orderResponse));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        // TODO: Implement get user orders endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<OrderResponse> orders = orderService.getUserOrders(userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
     @GetMapping("/portfolio/{portfolioId}")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getPortfolioOrders(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long portfolioId) {
-        // TODO: Implement get portfolio orders endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<OrderResponse> orders = orderService.getPortfolioOrders(userPrincipal.getId(), portfolioId);
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrder(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        // TODO: Implement get order endpoint
-        throw new UnsupportedOperationException("Not implemented yet");
+        OrderResponse order = orderService.getOrderById(userPrincipal.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success(order));
     }
 }
-
