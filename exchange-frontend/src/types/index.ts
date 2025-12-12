@@ -8,6 +8,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  cashBalance?: number;
   firstName?: string;
   lastName?: string;
   createdAt: string;
@@ -40,7 +41,6 @@ export interface Portfolio {
   id: number;
   name: string;
   description?: string;
-  cashBalance: number;
   totalValue?: number;
   holdings?: Holding[];
   createdAt: string;
@@ -50,7 +50,6 @@ export interface Portfolio {
 export interface CreatePortfolioRequest {
   name: string;
   description?: string;
-  initialBalance?: number;
 }
 
 // Asset types
@@ -121,4 +120,3 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
 }
-

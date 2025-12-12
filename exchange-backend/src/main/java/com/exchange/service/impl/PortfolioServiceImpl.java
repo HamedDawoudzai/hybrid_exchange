@@ -1,7 +1,6 @@
 package com.exchange.service.impl;
 
 import com.exchange.dto.request.CreatePortfolioRequest;
-import com.exchange.dto.request.DepositRequest;
 import com.exchange.dto.response.HoldingResponse;
 import com.exchange.dto.response.PortfolioResponse;
 import com.exchange.entity.Holding;
@@ -23,8 +22,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -42,14 +41,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         User user = userRepository.findById(Objects.requireNonNull(userId, "userId must not be null"))
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        BigDecimal initialBalance = request.getInitialBalance() != null
-                ? request.getInitialBalance()
-                : BigDecimal.ZERO;
-
         Portfolio portfolio = Portfolio.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .cashBalance(initialBalance)
                 .user(user)
                 .build();
 
@@ -57,14 +51,15 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         log.info("Portfolio created: ID {}, User ID {}, Name {}", portfolio.getId(), userId, request.getName());
 
-        return PortfolioResponse.fromEntity(portfolio);
+        // include totalValue (zero on create; holdings added later)
+        return PortfolioResponse.fromEntityWithHoldings(portfolio, null, BigDecimal.ZERO);
     }
 
     @Override
     public List<PortfolioResponse> getUserPortfolios(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
         return portfolios.stream()
-                .map(PortfolioResponse::fromEntity)
+                .map(this::computePortfolioSummary)
                 .collect(Collectors.toList());
     }
 
@@ -72,7 +67,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
-        return PortfolioResponse.fromEntity(portfolio);
+        return computePortfolioSummary(portfolio);
     }
 
     @Override
@@ -83,7 +78,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         List<Holding> holdings = holdingRepository.findByPortfolioIdWithAsset(portfolioId);
 
         List<HoldingResponse> holdingResponses = new ArrayList<>();
-        BigDecimal totalValue = portfolio.getCashBalance();
+        BigDecimal totalValue = BigDecimal.ZERO;
 
         for (Holding holding : holdings) {
             try {
@@ -130,20 +125,6 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     @Transactional
-    public PortfolioResponse deposit(Long userId, Long portfolioId, DepositRequest request) {
-        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
-
-        portfolio.setCashBalance(portfolio.getCashBalance().add(request.getAmount()));
-        portfolio = portfolioRepository.save(portfolio);
-
-        log.info("Deposit made: Portfolio ID {}, Amount {}", portfolioId, request.getAmount());
-
-        return PortfolioResponse.fromEntity(portfolio);
-    }
-
-    @Override
-    @Transactional
     public void deletePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
@@ -158,5 +139,29 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioRepository.delete(portfolio);
 
         log.info("Portfolio deleted: ID {}, User ID {}", portfolioId, userId);
+    }
+
+    private PortfolioResponse computePortfolioSummary(Portfolio portfolio) {
+        // For list/summary: compute total from holdings (with current prices)
+        List<Holding> holdings = holdingRepository.findByPortfolioIdWithAsset(portfolio.getId());
+        BigDecimal totalValue = BigDecimal.ZERO;
+
+        for (Holding holding : holdings) {
+            try {
+                BigDecimal currentPrice = priceService.getCurrentPrice(
+                        holding.getAsset().getSymbol(),
+                        holding.getAsset().getType());
+
+                BigDecimal marketValue = holding.getQuantity()
+                        .multiply(currentPrice)
+                        .setScale(4, RoundingMode.HALF_UP);
+
+                totalValue = totalValue.add(marketValue);
+            } catch (Exception e) {
+                log.warn("Failed to price holding {}: {}", holding.getAsset().getSymbol(), e.getMessage());
+            }
+        }
+
+        return PortfolioResponse.fromEntityWithHoldings(portfolio, null, totalValue);
     }
 }

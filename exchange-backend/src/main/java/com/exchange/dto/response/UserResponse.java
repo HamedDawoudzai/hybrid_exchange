@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
@@ -19,6 +20,7 @@ public class UserResponse {
     private String email;
     private String firstName;
     private String lastName;
+    private BigDecimal cashBalance;
     private LocalDateTime createdAt;
 
     public static UserResponse fromEntity(User user) {
@@ -28,6 +30,7 @@ public class UserResponse {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .cashBalance(user.getCashBalance())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

@@ -1,7 +1,6 @@
 package com.exchange.controller;
 
 import com.exchange.dto.request.CreatePortfolioRequest;
-import com.exchange.dto.request.DepositRequest;
 import com.exchange.dto.response.ApiResponse;
 import com.exchange.dto.response.PortfolioResponse;
 import com.exchange.security.UserPrincipal;
@@ -42,15 +41,6 @@ public class PortfolioController {
             @PathVariable Long id) {
         PortfolioResponse portfolio = portfolioService.getPortfolioWithHoldings(userPrincipal.getId(), id);
         return ResponseEntity.ok(ApiResponse.success(portfolio));
-    }
-
-    @PostMapping("/{id}/deposit")
-    public ResponseEntity<ApiResponse<PortfolioResponse>> deposit(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long id,
-            @Valid @RequestBody DepositRequest request) {
-        PortfolioResponse portfolio = portfolioService.deposit(userPrincipal.getId(), id, request);
-        return ResponseEntity.ok(ApiResponse.success("Deposit successful", portfolio));
     }
 
     @DeleteMapping("/{id}")

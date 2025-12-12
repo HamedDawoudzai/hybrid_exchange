@@ -1,8 +1,7 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+// exchange-frontend/next.config.mjs
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  // Proxy API requests to Spring Boot backend
   async rewrites() {
     return [
       {
@@ -14,4 +13,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
