@@ -2,11 +2,12 @@ package com.exchange.service.impl;
 
 import com.exchange.dto.response.UserResponse;
 import com.exchange.entity.User;
+import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.UserRepository;
 import com.exchange.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -15,26 +16,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findById(Long id) {
-        // TODO: Implement find by id
-        throw new UnsupportedOperationException("Not implemented yet");
+        return userRepository.findById(Objects.requireNonNull(id, "id must not be null"))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
     }
 
     @Override
     public User findByUsername(String username) {
-        // TODO: Implement find by username
-        throw new UnsupportedOperationException("Not implemented yet");
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
     }
 
     @Override
     public User findByEmail(String email) {
-        // TODO: Implement find by email
-        throw new UnsupportedOperationException("Not implemented yet");
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
     @Override
     public UserResponse getCurrentUser(Long userId) {
-        // TODO: Implement get current user
-        throw new UnsupportedOperationException("Not implemented yet");
+        User user = findById(userId);
+        return UserResponse.fromEntity(user);
     }
 
     @Override
@@ -47,4 +48,3 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByUsername(username);
     }
 }
-

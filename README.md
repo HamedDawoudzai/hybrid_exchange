@@ -110,6 +110,17 @@ exchange-backend/src/main/java/com/exchange/
 └── exception/                  # Exception handling
 ```
 
+## 🔧 Environment (Backend)
+
+Set these properties (e.g., in `application.yml` or env vars):
+
+- `app.jwt.secret` / `app.jwt.expiration` – JWT signing key & lifetime (ms)
+- `app.finnhub.base-url`, `app.finnhub.api-key` – stock price API
+- `app.coinbase.base-url` – crypto price API base (e.g., https://api.exchange.coinbase.com)
+- `spring.redis.host` / `spring.redis.port` – Redis for caching, token blacklist, rate limiting
+
+A running Redis instance is required for JWT blacklist, rate limiting, and price caching.
+
 ### Frontend (Next.js App Router)
 
 ```
