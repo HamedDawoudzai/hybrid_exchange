@@ -2,17 +2,31 @@ package com.exchange.service.impl;
 
 import com.exchange.dto.request.CreatePortfolioRequest;
 import com.exchange.dto.request.DepositRequest;
+import com.exchange.dto.response.HoldingResponse;
 import com.exchange.dto.response.PortfolioResponse;
+import com.exchange.entity.Holding;
+import com.exchange.entity.Portfolio;
+import com.exchange.entity.User;
+import com.exchange.exception.BadRequestException;
+import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.HoldingRepository;
 import com.exchange.repository.PortfolioRepository;
 import com.exchange.repository.UserRepository;
 import com.exchange.service.PortfolioService;
 import com.exchange.service.PriceService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PortfolioServiceImpl implements PortfolioService {
@@ -23,39 +37,126 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final PriceService priceService;
 
     @Override
+    @Transactional
     public PortfolioResponse createPortfolio(Long userId, CreatePortfolioRequest request) {
-        // TODO: Implement create portfolio
-        throw new UnsupportedOperationException("Not implemented yet");
+        User user = userRepository.findById(Objects.requireNonNull(userId, "userId must not be null"))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        BigDecimal initialBalance = request.getInitialBalance() != null
+                ? request.getInitialBalance()
+                : BigDecimal.ZERO;
+
+        Portfolio portfolio = Portfolio.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .cashBalance(initialBalance)
+                .user(user)
+                .build();
+
+        portfolio = portfolioRepository.save(Objects.requireNonNull(portfolio, "portfolio must not be null"));
+
+        log.info("Portfolio created: ID {}, User ID {}, Name {}", portfolio.getId(), userId, request.getName());
+
+        return PortfolioResponse.fromEntity(portfolio);
     }
 
     @Override
     public List<PortfolioResponse> getUserPortfolios(Long userId) {
-        // TODO: Implement get user portfolios
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
+        return portfolios.stream()
+                .map(PortfolioResponse::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
-        // TODO: Implement get portfolio by id
-        throw new UnsupportedOperationException("Not implemented yet");
+        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
+        return PortfolioResponse.fromEntity(portfolio);
     }
 
     @Override
     public PortfolioResponse getPortfolioWithHoldings(Long userId, Long portfolioId) {
-        // TODO: Implement get portfolio with holdings
-        throw new UnsupportedOperationException("Not implemented yet");
+        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
+
+        List<Holding> holdings = holdingRepository.findByPortfolioIdWithAsset(portfolioId);
+
+        List<HoldingResponse> holdingResponses = new ArrayList<>();
+        BigDecimal totalValue = portfolio.getCashBalance();
+
+        for (Holding holding : holdings) {
+            try {
+                BigDecimal currentPrice = priceService.getCurrentPrice(
+                        holding.getAsset().getSymbol(),
+                        holding.getAsset().getType());
+
+                BigDecimal marketValue = holding.getQuantity()
+                        .multiply(currentPrice)
+                        .setScale(4, RoundingMode.HALF_UP);
+
+                BigDecimal gainLoss = marketValue.subtract(
+                        holding.getQuantity().multiply(holding.getAverageBuyPrice())
+                                .setScale(4, RoundingMode.HALF_UP));
+
+                BigDecimal gainLossPercent = holding.getAverageBuyPrice().compareTo(BigDecimal.ZERO) > 0
+                        ? gainLoss.divide(
+                                holding.getQuantity().multiply(holding.getAverageBuyPrice()),
+                                4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+                        : BigDecimal.ZERO;
+
+                totalValue = totalValue.add(marketValue);
+
+                holdingResponses.add(HoldingResponse.builder()
+                        .id(holding.getId())
+                        .symbol(holding.getAsset().getSymbol())
+                        .assetName(holding.getAsset().getName())
+                        .assetType(holding.getAsset().getType())
+                        .quantity(holding.getQuantity())
+                        .averageBuyPrice(holding.getAverageBuyPrice())
+                        .currentPrice(currentPrice)
+                        .currentValue(marketValue)
+                        .profitLoss(gainLoss)
+                        .profitLossPercent(gainLossPercent)
+                        .build());
+            } catch (Exception e) {
+                log.warn("Failed to fetch price for {}: {}", holding.getAsset().getSymbol(), e.getMessage());
+                // Continue with other holdings even if one fails
+            }
+        }
+
+        return PortfolioResponse.fromEntityWithHoldings(portfolio, holdingResponses, totalValue);
     }
 
     @Override
+    @Transactional
     public PortfolioResponse deposit(Long userId, Long portfolioId, DepositRequest request) {
-        // TODO: Implement deposit
-        throw new UnsupportedOperationException("Not implemented yet");
+        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
+
+        portfolio.setCashBalance(portfolio.getCashBalance().add(request.getAmount()));
+        portfolio = portfolioRepository.save(portfolio);
+
+        log.info("Deposit made: Portfolio ID {}, Amount {}", portfolioId, request.getAmount());
+
+        return PortfolioResponse.fromEntity(portfolio);
     }
 
     @Override
+    @Transactional
     public void deletePortfolio(Long userId, Long portfolioId) {
-        // TODO: Implement delete portfolio
-        throw new UnsupportedOperationException("Not implemented yet");
+        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
+
+        if (!portfolio.getHoldings().isEmpty()) {
+            throw new BadRequestException("Cannot delete portfolio with existing holdings");
+        }
+        if (!portfolio.getOrders().isEmpty()) {
+            throw new BadRequestException("Cannot delete portfolio with existing orders");
+        }
+
+        portfolioRepository.delete(portfolio);
+
+        log.info("Portfolio deleted: ID {}, User ID {}", portfolioId, userId);
     }
 }
-

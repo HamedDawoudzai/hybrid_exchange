@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.Objects;
+
 /**
  * WebClient Configuration
  * Configures WebClient instances for external API calls.
@@ -20,15 +22,17 @@ public class WebClientConfig {
 
     @Bean
     public WebClient finnhubWebClient() {
+        String baseUrl = Objects.requireNonNull(finnhubBaseUrl, "finnhubBaseUrl must not be null");
         return WebClient.builder()
-                .baseUrl(finnhubBaseUrl)
+                .baseUrl(baseUrl)
                 .build();
     }
 
     @Bean
     public WebClient coinbaseWebClient() {
+        String baseUrl = Objects.requireNonNull(coinbaseBaseUrl, "coinbaseBaseUrl must not be null");
         return WebClient.builder()
-                .baseUrl(coinbaseBaseUrl)
+                .baseUrl(baseUrl)
                 .build();
     }
 }
