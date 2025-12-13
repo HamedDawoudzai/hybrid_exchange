@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "bordered";
+  variant?: "default" | "bordered" | "glass";
 }
 
 export function Card({
@@ -13,10 +13,12 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl transition shadow-lg",
+        "rounded-lg transition-all duration-300",
         variant === "bordered"
-          ? "border border-slate-800/70 bg-white/5 backdrop-blur-xl"
-          : "bg-slate-900/60 backdrop-blur-xl",
+          ? "border border-neutral-800/70 bg-neutral-950/50 backdrop-blur-xl"
+          : variant === "glass"
+          ? "border border-neutral-800/50 bg-black/40 backdrop-blur-xl"
+          : "bg-neutral-900/60 backdrop-blur-xl",
         className
       )}
       {...props}
@@ -35,7 +37,7 @@ export function CardHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("px-6 py-4 border-b border-slate-800/50", className)} {...props}>
+    <div className={cn("px-6 py-4 border-b border-neutral-800/50", className)} {...props}>
       {children}
     </div>
   );
@@ -50,7 +52,7 @@ export function CardTitle({
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={cn("text-lg font-semibold text-slate-100", className)} {...props}>
+    <h3 className={cn("text-lg font-serif font-semibold text-white", className)} {...props}>
       {children}
     </h3>
   );
@@ -65,7 +67,7 @@ export function CardContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("px-6 py-4 text-slate-100", className)} {...props}>
+    <div className={cn("px-6 py-4 text-neutral-200", className)} {...props}>
       {children}
     </div>
   );
@@ -80,7 +82,7 @@ export function CardFooter({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("px-6 py-4 border-t border-slate-800/50", className)} {...props}>
+    <div className={cn("px-6 py-4 border-t border-neutral-800/50", className)} {...props}>
       {children}
     </div>
   );

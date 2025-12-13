@@ -1,7 +1,9 @@
 package com.exchange.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +33,12 @@ public class RedisConfig {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Enable type information so deserialization returns the correct class
+        mapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
         return new GenericJackson2JsonRedisSerializer(mapper);
     }
 
@@ -57,7 +65,8 @@ public class RedisConfig {
         RedisConnectionFactory factory = Objects.requireNonNull(connectionFactory, "connectionFactory must not be null");
 
         final Duration ttlDefault = Objects.requireNonNull(Duration.ofHours(1));
-        final Duration ttlPrices  = Objects.requireNonNull(Duration.ofSeconds(30));
+        // Increase price cache TTL to 5 minutes to avoid Polygon rate limits (5 calls/min)
+        final Duration ttlPrices  = Objects.requireNonNull(Duration.ofMinutes(5));
         final Duration ttlAssets  = Objects.requireNonNull(Duration.ofHours(1));
 
         GenericJackson2JsonRedisSerializer valueSerializer = jsonSerializer();

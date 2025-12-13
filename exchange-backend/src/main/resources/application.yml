@@ -37,6 +37,10 @@ app:
     api-key: ${FINNHUB_API_KEY:demo}
     base-url: https://finnhub.io/api/v1
 
+  polygon:
+    api-key: ${POLYGON_API_KEY:demo}
+    base-url: https://api.polygon.io
+
   coinbase:
     base-url: https://api.exchange.coinbase.com
 

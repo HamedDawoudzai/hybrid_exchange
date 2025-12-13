@@ -7,10 +7,12 @@ import type { AssetType, Asset } from "@/types";
 interface UseAssetsOptions {
   filter?: AssetType | "all";
   enabled?: boolean;
+  /** Polling interval in ms. Set to 0 to disable. Default: 30000 (30s) */
+  refetchInterval?: number;
 }
 
 export function useAssets(options: UseAssetsOptions = {}) {
-  const { filter = "all", enabled = true } = options;
+  const { filter = "all", enabled = true, refetchInterval = 30_000 } = options;
 
   const query = useQuery<Asset[]>({
     queryKey: ["assets", filter],
@@ -27,13 +29,17 @@ export function useAssets(options: UseAssetsOptions = {}) {
       const res = await assetApi.getAll();
       return res.data.data;
     },
-    staleTime: 60_000,
+    staleTime: 15_000, // Consider data stale after 15s
+    refetchInterval: refetchInterval > 0 ? refetchInterval : false, // Poll for updates
+    refetchIntervalInBackground: false, // Don't poll when tab is not focused
   });
 
   return {
     assets: query.data ?? [],
     isLoading: query.isLoading,
+    isFetching: query.isFetching, // True during background refetches
     error: query.error,
     refetch: query.refetch,
+    dataUpdatedAt: query.dataUpdatedAt, // Timestamp of last successful fetch
   };
 }
