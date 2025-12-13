@@ -61,7 +61,7 @@ export function Header() {
               <img
                 src="/HD_investing_logo.png"
                 alt="HD Investing Corp"
-                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-105"
+                className="w-12 h-12 object-contain logo-glow-hover"
               />
               <div className="hidden sm:block">
                 <p className="text-sm font-serif font-semibold text-white tracking-wide">

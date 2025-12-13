@@ -3,10 +3,13 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useOrders } from "@/hooks/useOrders";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { HoldingsList } from "@/components/portfolio/HoldingsList";
+import { PortfolioChart } from "@/components/charts/PortfolioChart";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { fireGoldConfetti } from "@/lib/confetti";
 import { orderApi, priceApi } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -15,6 +18,7 @@ export default function PortfolioDetailPage() {
   const params = useParams();
   const portfolioId = Number(params.id);
   const { portfolio, isLoading } = usePortfolio(portfolioId);
+  const { orders } = useOrders(portfolioId);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -143,6 +147,10 @@ export default function PortfolioDetailPage() {
         type: tradeType,
         quantity: qty,
       });
+      // Fire confetti on successful BUY order
+      if (tradeType === "BUY") {
+        fireGoldConfetti();
+      }
       toast.success(`${tradeType === "BUY" ? "Bought" : "Sold"} ${qty} ${symbol.toUpperCase()}`);
       setShowTrade(false);
       setSymbol("");
@@ -242,6 +250,29 @@ export default function PortfolioDetailPage() {
             }
           />
         </div>
+
+        {/* Performance Chart */}
+        <Card className="border border-neutral-800/50 bg-neutral-950/50">
+          <CardHeader className="border-b border-neutral-800/50">
+            <CardTitle className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-gold-600/10 text-gold-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+              </span>
+              <span className="font-serif">Performance</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortfolioChart
+              holdings={portfolio.holdings ?? []}
+              totalValue={totalValue}
+              costBasis={invested}
+              orders={orders}
+              isLoading={isLoading}
+            />
+          </CardContent>
+        </Card>
 
         {/* Holdings */}
         <Card className="border border-neutral-800/50 bg-neutral-950/50">
