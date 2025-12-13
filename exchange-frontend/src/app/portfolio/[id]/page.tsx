@@ -50,7 +50,9 @@ export default function PortfolioDetailPage() {
 
     // Global net contributed cash
     const netContributed = (user?.totalDeposits ?? 0) - (user?.totalWithdrawals ?? 0);
-    // Include reserved cash in net worth since it's still part of user's assets
+    // Reserved cash is still part of user's assets, just not available for spending
+    // Since it's already subtracted from cashBalance, we need to add it back to get total net worth
+    // Net worth = holdings value + available cash + reserved cash
     const netWorth = currentValue + cashBalance + reservedCash;
 
     const pnl = netWorth - netContributed;

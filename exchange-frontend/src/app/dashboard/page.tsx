@@ -46,7 +46,9 @@ export default function DashboardPage() {
     }
 
     const netContributed = (user?.totalDeposits ?? 0) - (user?.totalWithdrawals ?? 0);
-    // Include reserved cash in net worth since it's still part of user's assets
+    // Reserved cash is still part of user's assets, just not available for spending
+    // Since it's already subtracted from cashBalance, we need to add it back to get total net worth
+    // Net worth = holdings value + available cash + reserved cash
     const netWorth = marketValue + cashBalance + reservedCash;
 
     // Realized+unrealized P&L vs net contributed cash

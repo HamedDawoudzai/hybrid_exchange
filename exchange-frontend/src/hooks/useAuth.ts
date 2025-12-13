@@ -85,6 +85,9 @@ export function useAuth() {
             username: updatedUser.username,
             email: updatedUser.email,
             cashBalance: updatedUser.cashBalance,
+            reservedCash: updatedUser.reservedCash,
+            totalDeposits: updatedUser.totalDeposits,
+            totalWithdrawals: updatedUser.totalWithdrawals,
             firstName: updatedUser.firstName,
             lastName: updatedUser.lastName,
             createdAt: updatedUser.createdAt,
@@ -92,7 +95,10 @@ export function useAuth() {
           token
         );
       }
+      // Invalidate user data and orders to refresh immediately
       queryClient.invalidateQueries({ queryKey: ["me"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders-portfolio"] });
     },
   });
 
@@ -107,6 +113,9 @@ export function useAuth() {
             username: updatedUser.username,
             email: updatedUser.email,
             cashBalance: updatedUser.cashBalance,
+            reservedCash: updatedUser.reservedCash,
+            totalDeposits: updatedUser.totalDeposits,
+            totalWithdrawals: updatedUser.totalWithdrawals,
             firstName: updatedUser.firstName,
             lastName: updatedUser.lastName,
             createdAt: updatedUser.createdAt,
@@ -114,7 +123,10 @@ export function useAuth() {
           token
         );
       }
+      // Invalidate user data and orders to refresh immediately
       queryClient.invalidateQueries({ queryKey: ["me"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders-portfolio"] });
     },
   });
 

@@ -1,6 +1,6 @@
 // Enums
 export type AssetType = "STOCK" | "CRYPTO";
-export type OrderType = "BUY" | "SELL";
+export type OrderType = "BUY" | "SELL" | "DEPOSIT" | "WITHDRAW";
 export type OrderStatus = "PENDING" | "COMPLETED" | "CANCELLED" | "FAILED";
 export type StopOrderStatus = "PENDING" | "TRIGGERED" | "FILLED" | "CANCELLED";
 export type LimitOrderStatus = "PENDING" | "FILLED" | "CANCELLED" | "EXPIRED";

@@ -2,6 +2,8 @@ package com.exchange.enums;
 
 public enum OrderType {
     BUY,
-    SELL
+    SELL,
+    DEPOSIT,
+    WITHDRAW
 }
 

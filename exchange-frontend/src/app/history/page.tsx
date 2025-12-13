@@ -101,7 +101,11 @@ export default function HistoryPage() {
                                 <p className="font-semibold text-white">{order.symbol}</p>
                                 <span
                                   className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                    order.type === "BUY" ? "bg-success-500/20 text-success-500" : "bg-danger-500/20 text-danger-500"
+                                    order.type === "BUY" 
+                                      ? "bg-success-500/20 text-success-500"
+                                      : order.type === "SELL"
+                                      ? "bg-danger-500/20 text-danger-500"
+                                      : "bg-yellow-500/20 text-yellow-500"
                                   }`}
                                 >
                                   {order.type}
@@ -133,7 +137,11 @@ export default function HistoryPage() {
                           </div>
                           <span
                             className={`text-sm font-semibold ${
-                              order.type === "BUY" ? "text-success-500" : "text-danger-500"
+                              order.type === "BUY"
+                                ? "text-success-500"
+                                : order.type === "SELL"
+                                ? "text-danger-500"
+                                : "text-yellow-500"
                             }`}
                           >
                             {order.type}
