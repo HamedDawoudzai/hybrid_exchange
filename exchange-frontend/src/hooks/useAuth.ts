@@ -79,7 +79,28 @@ export function useAuth() {
     mutationFn: (amount: number) => userApi.depositCash(amount).then((r) => r.data.data),
     onSuccess: (updatedUser) => {
       if (token) {
-        // keep local store in sync
+        storeLogin(
+          {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            cashBalance: updatedUser.cashBalance,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            createdAt: updatedUser.createdAt,
+          },
+          token
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+
+  // Withdraw cash mutation
+  const withdrawMutation = useMutation({
+    mutationFn: (amount: number) => userApi.withdrawCash(amount).then((r) => r.data.data),
+    onSuccess: (updatedUser) => {
+      if (token) {
         storeLogin(
           {
             id: updatedUser.id,
@@ -116,12 +137,15 @@ export function useAuth() {
     login: (payload: LoginRequest) => loginMutation.mutate(payload),
     register: (payload: RegisterRequest) => registerMutation.mutate(payload),
     depositCash: (amount: number) => depositMutation.mutate(amount),
+    withdrawCash: (amount: number) => withdrawMutation.mutate(amount),
     logout,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
     isDepositing: depositMutation.isPending,
+    isWithdrawing: withdrawMutation.isPending,
     loginError: loginMutation.error,
     registerError: registerMutation.error,
     depositError: depositMutation.error,
+    withdrawError: withdrawMutation.error,
   };
 }

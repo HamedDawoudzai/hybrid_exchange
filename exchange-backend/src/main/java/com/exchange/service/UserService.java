@@ -20,4 +20,6 @@ public interface UserService {
     boolean existsByUsername(String username);
 
     UserResponse depositCash(Long userId, BigDecimal amount);
+
+    UserResponse withdrawCash(Long userId, BigDecimal amount);
 }

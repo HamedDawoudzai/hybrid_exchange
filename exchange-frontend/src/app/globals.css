@@ -165,6 +165,57 @@ input[type="number"] {
   }
 }
 
+/* Logo Spin-in Animation */
+@keyframes logoSpinIn {
+  0% {
+    transform: scale(0.5) rotate(-180deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1) rotate(20deg);
+    opacity: 1;
+  }
+  85% {
+    transform: scale(0.95) rotate(-10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Logo Float Animation */
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-logo-spin {
+  animation: logoSpinIn 1s ease-out forwards;
+}
+
+.animate-logo-float {
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.animate-logo-spin-float {
+  animation: logoSpinIn 1s ease-out forwards, logoFloat 3s ease-in-out 1s infinite;
+}
+
+/* Logo Glow on Hover */
+.logo-glow-hover {
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.logo-glow-hover:hover {
+  filter: drop-shadow(0 0 8px rgba(201, 169, 98, 0.6));
+  transform: scale(1.05);
+}
+
 
 /* Gold line decorations (like in the logo) */
 .gold-line {

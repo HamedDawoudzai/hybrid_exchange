@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PriceChart } from "@/components/charts/PriceChart";
 import { OrderForm } from "@/components/trade/OrderForm";
+import { WatchlistStar } from "@/components/watchlist/WatchlistStar";
+import { LimitOrderForm } from "@/components/orders/LimitOrderForm";
+import { StopLossForm } from "@/components/orders/StopLossForm";
 import { usePortfolios } from "@/hooks/usePortfolio";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrice, usePriceHistory } from "@/hooks/usePrices";
@@ -53,6 +56,7 @@ export default function TradeSymbolPage() {
   const { portfolios } = usePortfolios();
   const { user } = useAuth();
   const cashBalance = user?.cashBalance ?? 0;
+  const [orderTab, setOrderTab] = useState<"market" | "limit" | "stop">("market");
 
   const currentPrice = priceData?.price ?? 0;
   const change = priceData?.change ?? 0;
@@ -123,7 +127,10 @@ export default function TradeSymbolPage() {
               <span className="w-8 h-px bg-gold-600/50"></span>
               <p className="text-[10px] uppercase tracking-[0.3em] text-gold-600">Trade</p>
             </div>
-            <h1 className="text-3xl font-serif font-light text-white">{symbol}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-serif font-light text-white">{symbol}</h1>
+              <WatchlistStar symbol={symbol} size="lg" />
+            </div>
             <p className="text-sm text-neutral-500">{asset?.name ?? "Asset"}</p>
           </div>
           <div className="text-right">
@@ -165,11 +172,45 @@ export default function TradeSymbolPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Order Type Tabs */}
+              <div className="flex mb-4 rounded-lg bg-neutral-900/50 p-1">
+                <button
+                  onClick={() => setOrderTab("market")}
+                  className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
+                    orderTab === "market"
+                      ? "bg-gold-600 text-black"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Market Order
+                </button>
+                <button
+                  onClick={() => setOrderTab("limit")}
+                  className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
+                    orderTab === "limit"
+                      ? "bg-gold-600 text-black"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Limit Order
+                </button>
+                <button
+                  onClick={() => setOrderTab("stop")}
+                  className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
+                    orderTab === "stop"
+                      ? "bg-gold-600 text-black"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Stop Loss
+                </button>
+              </div>
+
               {portfolios.length === 0 ? (
                 <p className="text-center py-8 text-neutral-400">
                   Create a portfolio first to start trading.
                 </p>
-              ) : (
+              ) : orderTab === "market" ? (
                 <OrderForm
                   symbol={symbol}
                   currentPrice={currentPrice}
@@ -177,6 +218,18 @@ export default function TradeSymbolPage() {
                   isLoading={isLoading}
                   portfolios={portfolios}
                   cashBalance={cashBalance}
+                />
+              ) : orderTab === "stop" ? (
+                <StopLossForm
+                  symbol={symbol}
+                  currentPrice={currentPrice}
+                  portfolios={portfolios}
+                />
+              ) : (
+                <LimitOrderForm
+                  symbol={symbol}
+                  currentPrice={currentPrice}
+                  portfolios={portfolios}
                 />
               )}
             </CardContent>

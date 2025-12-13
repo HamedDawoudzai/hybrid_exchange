@@ -30,121 +30,87 @@ export function HoldingsList({ holdings, isLoading, onTrade }: HoldingsListProps
   }
 
   return (
-    <div className="space-y-2">
-      {/* Desktop Header */}
-      <div className="hidden lg:grid grid-cols-7 gap-4 px-4 py-2 text-[10px] uppercase tracking-wide text-neutral-500">
-        <span>Asset</span>
-        <span className="text-right">Quantity</span>
-        <span className="text-right">Avg Price</span>
-        <span className="text-right">Current</span>
-        <span className="text-right">Value</span>
-        <span className="text-right">P/L</span>
-        <span className="text-right">Actions</span>
-      </div>
+    <div className="space-y-3">
+      {holdings.map((holding) => {
+        const pnl = holding.profitLoss ?? 0;
+        const pnlPct = holding.profitLossPercent ?? 0;
+        const costBasis = holding.quantity * holding.averageBuyPrice;
+        const currentPrice = holding.currentPrice ?? holding.averageBuyPrice;
+        const priceVsAvg = currentPrice - holding.averageBuyPrice;
+        const priceVsAvgPct = holding.averageBuyPrice > 0 
+          ? ((currentPrice - holding.averageBuyPrice) / holding.averageBuyPrice) * 100 
+          : 0;
+        
+        const isAboveAvg = currentPrice > holding.averageBuyPrice;
+        const pnlClass = pnl >= 0 ? "text-success-500" : "text-danger-500";
+        const priceIndicatorClass = isAboveAvg ? "text-success-500" : "text-danger-500";
 
-      <div className="divide-y divide-neutral-800/50 border border-neutral-800/50 rounded overflow-hidden bg-neutral-900/30">
-        {holdings.map((holding) => {
-          const pnl = holding.profitLoss ?? null;
-          const pnlPct = holding.profitLossPercent ?? null;
-          const pnlClass =
-            pnlPct == null
-              ? "text-neutral-400"
-              : pnlPct >= 0
-              ? "text-success-500"
-              : "text-danger-500";
-
-          return (
-            <div key={holding.id} className="p-4">
-              {/* Mobile Layout */}
-              <div className="lg:hidden space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-white">{holding.symbol}</p>
-                    <p className="text-xs text-neutral-500">{holding.assetName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-white">
-                      {holding.currentValue != null ? formatCurrency(holding.currentValue) : "--"}
-                    </p>
-                    <p className={`text-xs font-semibold ${pnlClass}`}>
-                      {pnl != null ? `${pnl >= 0 ? "+" : ""}${formatCurrency(pnl)}` : "--"}
-                      {pnlPct != null ? ` (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%)` : ""}
-                    </p>
-                  </div>
+        return (
+          <div key={holding.id} className="border border-neutral-800/50 rounded-lg bg-neutral-900/30 overflow-hidden">
+            {/* Header Row */}
+            <div className="flex items-center justify-between p-4 border-b border-neutral-800/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-500/30 to-orange-500/20 flex items-center justify-center text-gold-300 text-sm font-bold">
+                  {holding.symbol.slice(0, 2)}
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <p className="text-neutral-600 uppercase tracking-wide">Qty</p>
-                    <p className="text-neutral-300">{formatNumber(holding.quantity, 4)}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-600 uppercase tracking-wide">Avg</p>
-                    <p className="text-neutral-300">{formatCurrency(holding.averageBuyPrice)}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-600 uppercase tracking-wide">Price</p>
-                    <p className="text-neutral-300">
-                      {holding.currentPrice != null ? formatCurrency(holding.currentPrice) : "--"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onTrade?.("BUY", holding.symbol)}
-                    className="flex-1 rounded bg-success-500 px-3 py-2 text-xs font-semibold text-white hover:bg-success-600 transition"
-                  >
-                    Buy
-                  </button>
-                  <button
-                    onClick={() => onTrade?.("SELL", holding.symbol)}
-                    className="flex-1 rounded bg-danger-500 px-3 py-2 text-xs font-semibold text-white hover:bg-danger-600 transition"
-                  >
-                    Sell
-                  </button>
-                </div>
-              </div>
-
-              {/* Desktop Layout */}
-              <div className="hidden lg:grid grid-cols-7 gap-4 items-center text-sm">
                 <div>
                   <p className="font-semibold text-white">{holding.symbol}</p>
                   <p className="text-xs text-neutral-500">{holding.assetName}</p>
                 </div>
-                <span className="text-right text-neutral-300">
-                  {formatNumber(holding.quantity, 4)}
-                </span>
-                <span className="text-right text-neutral-300">
-                  {formatCurrency(holding.averageBuyPrice)}
-                </span>
-                <span className="text-right text-neutral-300">
-                  {holding.currentPrice != null ? formatCurrency(holding.currentPrice) : "--"}
-                </span>
-                <span className="text-right text-white">
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-semibold text-white">
                   {holding.currentValue != null ? formatCurrency(holding.currentValue) : "--"}
-                </span>
-                <span className={`text-right font-semibold ${pnlClass}`}>
-                  {pnl != null ? formatCurrency(pnl) : "--"}
-                  {pnlPct != null ? ` (${pnlPct.toFixed(2)}%)` : ""}
-                </span>
-                <div className="flex justify-end gap-2 text-xs">
-                  <button
-                    onClick={() => onTrade?.("BUY", holding.symbol)}
-                    className="rounded bg-success-500 px-3 py-1.5 font-semibold text-white hover:bg-success-600 transition"
-                  >
-                    Buy
-                  </button>
-                  <button
-                    onClick={() => onTrade?.("SELL", holding.symbol)}
-                    className="rounded bg-danger-500 px-3 py-1.5 font-semibold text-white hover:bg-danger-600 transition"
-                  >
-                    Sell
-                  </button>
-                </div>
+                </p>
+                <p className={`text-sm font-semibold ${pnlClass}`}>
+                  {pnl >= 0 ? "+" : ""}{formatCurrency(pnl)} ({pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%)
+                </p>
               </div>
             </div>
-          );
-        })}
-      </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-neutral-800/30">
+              <div className="bg-neutral-900/60 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Shares Held</p>
+                <p className="text-sm font-medium text-white">{formatNumber(holding.quantity, 6)}</p>
+              </div>
+              <div className="bg-neutral-900/60 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Avg Cost</p>
+                <p className="text-sm font-medium text-white">{formatCurrency(holding.averageBuyPrice)}</p>
+              </div>
+              <div className="bg-neutral-900/60 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Current Price</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white">{formatCurrency(currentPrice)}</p>
+                  <span className={`text-[10px] font-semibold ${priceIndicatorClass}`}>
+                    {isAboveAvg ? "↑" : "↓"} {Math.abs(priceVsAvgPct).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="bg-neutral-900/60 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Cost Basis</p>
+                <p className="text-sm font-medium text-white">{formatCurrency(costBasis)}</p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 py-2 bg-neutral-950/50 flex justify-end gap-2">
+              <button
+                onClick={() => onTrade?.("BUY", holding.symbol)}
+                className="rounded bg-success-500/20 border border-success-500/30 px-3 py-1.5 text-xs font-semibold text-success-400 hover:bg-success-500/30 transition"
+              >
+                Buy More
+              </button>
+              <button
+                onClick={() => onTrade?.("SELL", holding.symbol)}
+                className="rounded bg-danger-500/20 border border-danger-500/30 px-3 py-1.5 text-xs font-semibold text-danger-400 hover:bg-danger-500/30 transition"
+              >
+                Sell
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -44,13 +44,26 @@ export function OrderForm({
   }, [portfolioId, portfolios, symbol]);
 
   const holdingQuantity = currentHolding?.quantity ?? 0;
-  const maxBuyQuantity = currentPrice > 0 ? cashBalance / currentPrice : 0;
+  
+  // Calculate max buy quantity with precision handling to avoid going over cash balance
+  const maxBuyQuantity = useMemo(() => {
+    if (currentPrice <= 0) return 0;
+    // Floor to 6 decimal places to ensure we don't exceed cash balance
+    const rawQty = cashBalance / currentPrice;
+    return Math.floor(rawQty * 1000000) / 1000000;
+  }, [cashBalance, currentPrice]);
+
   const total = parseFloat(quantity || "0") * currentPrice;
 
   const handlePercentage = (percent: number) => {
     if (orderType === "BUY") {
-      const qty = (maxBuyQuantity * percent) / 100;
-      setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      if (percent === 100) {
+        // For 100%, use exact max quantity to avoid exceeding balance
+        setQuantity(maxBuyQuantity > 0 ? maxBuyQuantity.toFixed(6) : "");
+      } else {
+        const qty = (maxBuyQuantity * percent) / 100;
+        setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      }
       setSliderValue(percent);
     } else {
       const qty = (holdingQuantity * percent) / 100;
@@ -62,8 +75,12 @@ export function OrderForm({
   const handleSliderChange = (value: number) => {
     setSliderValue(value);
     if (orderType === "BUY") {
-      const qty = (maxBuyQuantity * value) / 100;
-      setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      if (value === 100) {
+        setQuantity(maxBuyQuantity > 0 ? maxBuyQuantity.toFixed(6) : "");
+      } else {
+        const qty = (maxBuyQuantity * value) / 100;
+        setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      }
     } else {
       const qty = (holdingQuantity * value) / 100;
       setQuantity(qty > 0 ? qty.toFixed(6) : "");

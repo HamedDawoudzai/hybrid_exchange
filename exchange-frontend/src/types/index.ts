@@ -2,6 +2,8 @@
 export type AssetType = "STOCK" | "CRYPTO";
 export type OrderType = "BUY" | "SELL";
 export type OrderStatus = "PENDING" | "COMPLETED" | "CANCELLED" | "FAILED";
+export type StopOrderStatus = "PENDING" | "TRIGGERED" | "FILLED" | "CANCELLED";
+export type LimitOrderStatus = "PENDING" | "FILLED" | "CANCELLED" | "EXPIRED";
 
 // User types
 export interface User {
@@ -9,6 +11,9 @@ export interface User {
   username: string;
   email: string;
   cashBalance?: number;
+  reservedCash?: number; // Cash reserved for pending limit buy orders
+  totalDeposits?: number;
+  totalWithdrawals?: number;
   firstName?: string;
   lastName?: string;
   createdAt: string;
@@ -112,6 +117,75 @@ export interface PriceData {
   changePercent?: number;
   volume?: number;
   timestamp: string;
+}
+
+// Watchlist types
+export interface WatchlistItem {
+  id: number;
+  assetId: number;
+  symbol: string;
+  name: string;
+  assetType: AssetType;
+  currentPrice?: number;
+  priceChange24h?: number;
+  priceChangePercent24h?: number;
+  addedAt: string;
+}
+
+// Limit Order types
+export interface LimitOrder {
+  id: number;
+  portfolioId: number;
+  portfolioName: string;
+  assetId: number;
+  symbol: string;
+  assetName: string;
+  assetType: AssetType;
+  type: OrderType;
+  targetPrice: number;
+  quantity: number;
+  reservedAmount: number;
+  status: LimitOrderStatus;
+  filledPrice?: number;
+  filledAt?: string;
+  createdAt: string;
+  currentPrice?: number;
+}
+
+export interface LimitOrderRequest {
+  portfolioId: number;
+  symbol: string;
+  type: OrderType;
+  targetPrice: number;
+  quantity: number;
+}
+
+// Stop Order types
+export interface StopOrder {
+  id: number;
+  portfolioId: number;
+  portfolioName: string;
+  assetId: number;
+  symbol: string;
+  assetName: string;
+  assetType: AssetType;
+  type: OrderType;
+  stopPrice: number;
+  quantity: number;
+  status: StopOrderStatus;
+  filledPrice?: number;
+  triggeredAt?: string;
+  filledAt?: string;
+  createdAt: string;
+  currentPrice?: number;
+}
+
+export interface StopOrderRequest {
+  portfolioId: number;
+  symbol: string;
+  type: OrderType;
+  stopPrice: number;
+  quantity: number;
 }
 
 // API Response wrapper
