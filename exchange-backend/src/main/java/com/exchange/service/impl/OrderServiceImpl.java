@@ -60,26 +60,39 @@ public class OrderServiceImpl implements OrderService {
                 .setScale(4, RoundingMode.HALF_UP);
         BigDecimal executionPrice = currentPrice; // Default to current price, will be updated for SELL orders
 
+        // Validate order type - DEPOSIT and WITHDRAW are only for cash transactions via UserService
+        if (request.getType() == OrderType.DEPOSIT || request.getType() == OrderType.WITHDRAW) {
+            throw new BadRequestException("DEPOSIT and WITHDRAW orders can only be created through deposit/withdraw endpoints");
+        }
+        
         if (request.getType() == OrderType.BUY) {
             BigDecimal cashBalance = user.getCashBalance();
-            // Cap quantity to what the user can actually afford at current price to avoid failures on 100% slider
-            BigDecimal maxAffordableQty = cashBalance.divide(currentPrice, 6, RoundingMode.FLOOR);
+            
+            // Calculate what the user can actually afford (with high precision)
+            BigDecimal maxAffordableQty = cashBalance.divide(currentPrice, 8, RoundingMode.FLOOR);
             if (maxAffordableQty.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient balance. Required: %s, Available: %s",
                                 totalAmount, cashBalance));
             }
+            
+            // If requested quantity exceeds what they can afford, use all available cash
             if (requestedQuantity.compareTo(maxAffordableQty) > 0) {
-                usedQuantity = maxAffordableQty;
+                // Use ALL available cash to avoid leaving money behind due to rounding
+                totalAmount = cashBalance;
+                // Recalculate the actual quantity used based on the exact cash spent
+                usedQuantity = totalAmount.divide(currentPrice, 8, RoundingMode.HALF_UP);
+            } else {
+                // User requested less than they can afford, calculate exact amount
                 totalAmount = usedQuantity.multiply(currentPrice).setScale(4, RoundingMode.HALF_UP);
+                // Ensure we don't exceed available cash due to rounding
+                if (totalAmount.compareTo(cashBalance) > 0) {
+                    totalAmount = cashBalance;
+                    usedQuantity = totalAmount.divide(currentPrice, 8, RoundingMode.HALF_UP);
+                }
             }
-            BigDecimal difference = totalAmount.subtract(cashBalance);
 
-            // Allow for small floating-point rounding errors (e.g., $0.01 difference)
-            if (difference.compareTo(BigDecimal.ZERO) > 0 && difference.compareTo(new BigDecimal("0.01")) <= 0) {
-                totalAmount = cashBalance; // Cap to available balance
-            }
-
+            // Final validation
             if (cashBalance.compareTo(totalAmount) < 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient balance. Required: %s, Available: %s",
@@ -163,7 +176,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = Objects.requireNonNull(orderRepository.save(Objects.requireNonNull(order, "order must not be null")), "saved order must not be null");
 
         log.info("Order placed successfully: Order ID {}, User ID {}, Type {}, Symbol {}, Quantity {}",
-                savedOrder.getId(), userId, request.getType(), request.getSymbol(), request.getQuantity());
+                savedOrder.getId(), userId, request.getType(), request.getSymbol(), usedQuantity);
 
         return OrderResponse.fromEntity(savedOrder);
     }

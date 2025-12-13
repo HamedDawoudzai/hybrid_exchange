@@ -50,7 +50,8 @@ public class PolygonServiceImpl implements PolygonService {
             }
 
             String status = (String) response.get("status");
-            if (!"OK".equals(status)) {
+            // "DELAYED" is valid for free tier (15-min delayed data)
+            if (!"OK".equals(status) && !"DELAYED".equals(status)) {
                 log.warn("Polygon API returned status: {} for {}", status, symbol);
                 throw new RuntimeException("Polygon API error for " + symbol);
             }
@@ -69,10 +70,48 @@ public class PolygonServiceImpl implements PolygonService {
             BigDecimal low = toBigDecimal(bar.get("l"));
             Long volume = toLong(bar.get("v"));
 
-            // Calculate change from open
-            BigDecimal change = close.subtract(open);
-            BigDecimal changePercent = open.compareTo(BigDecimal.ZERO) != 0
-                    ? change.divide(open, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+            // The /prev endpoint returns the previous trading day's aggregated bar
+            // We're using that day's close as the current price (free tier limitation)
+            // To get the true previous close (close of day before previous), fetch from historical data
+            BigDecimal previousClose = null;
+            try {
+                // Fetch 2 days of historical data to get the day-before's close
+                java.time.LocalDate today = java.time.LocalDate.now();
+                java.time.LocalDate twoDaysAgo = today.minusDays(2);
+                String dateStr = twoDaysAgo.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                
+                @SuppressWarnings("unchecked")
+                Map<String, Object> histResponse = webClient.get()
+                        .uri("/v2/aggs/ticker/{symbol}/range/1/day/{from}/{to}?apiKey={apiKey}&limit=2",
+                                symbol.toUpperCase(), dateStr, dateStr, apiKey)
+                        .retrieve()
+                        .bodyToMono(Map.class)
+                        .block();
+                
+                if (histResponse != null && ("OK".equals(histResponse.get("status")) || "DELAYED".equals(histResponse.get("status")))) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> histResults = (List<Map<String, Object>>) histResponse.get("results");
+                    if (histResults != null && histResults.size() >= 2) {
+                        // Get the earlier day's close (day before previous)
+                        Map<String, Object> earlierBar = histResults.get(0);
+                        previousClose = toBigDecimal(earlierBar.get("c"));
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Could not fetch historical data for previous close: {}", e.getMessage());
+            }
+            
+            // Fallback: if we couldn't get historical data, use previous day's open as approximation
+            // (This is not ideal but better than using close which would make change = 0)
+            if (previousClose == null) {
+                previousClose = open;
+                log.debug("Using previous day's open as approximation for previous close (historical fetch failed)");
+            }
+            
+            // Calculate change from previous close to current price (previous day's close)
+            BigDecimal change = close.subtract(previousClose);
+            BigDecimal changePercent = previousClose.compareTo(BigDecimal.ZERO) > 0
+                    ? change.divide(previousClose, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                     : BigDecimal.ZERO;
 
             Long timestamp = bar.get("t") != null ? ((Number) bar.get("t")).longValue() : System.currentTimeMillis();
@@ -83,7 +122,7 @@ public class PolygonServiceImpl implements PolygonService {
                     .open(open)
                     .high(high)
                     .low(low)
-                    .previousClose(open)
+                    .previousClose(previousClose)
                     .change(change)
                     .changePercent(changePercent)
                     .volume(volume)
