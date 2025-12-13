@@ -29,14 +29,16 @@ export default function HomePage() {
 
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 py-20 text-center">
-          {/* Logo - Large and prominent */}
-          <div className="flex justify-center mb-8 animate-fade-in">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/HD_investing_logo.png"
-              alt="HD Investing Corp"
-              className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain drop-shadow-2xl"
-            />
+          {/* Logo - Large with spin and float animation */}
+          <div className="flex justify-center mb-8 logo-hover-float">
+            <div className="logo-spin-settle">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/HD_investing_logo.png"
+                alt="HD Investing Corp"
+                className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain drop-shadow-2xl"
+              />
+            </div>
           </div>
 
           {/* Tagline */}

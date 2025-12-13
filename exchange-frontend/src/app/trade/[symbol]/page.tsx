@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetApi, orderApi } from "@/lib/api";
 import type { OrderRequest, OrderType, Asset } from "@/types";
 import { formatCurrency } from "@/lib/utils";
+import { fireGoldConfetti } from "@/lib/confetti";
 import { toast } from "sonner";
 
 export default function TradeSymbolPage() {
@@ -79,7 +80,13 @@ export default function TradeSymbolPage() {
     };
     try {
       await orderApi.place(payload);
-      toast.success("Order placed");
+      
+      // Fire confetti on successful BUY order
+      if (type === "BUY") {
+        fireGoldConfetti();
+      }
+      
+      toast.success(type === "BUY" ? `Successfully bought ${symbol}!` : `Successfully sold ${symbol}`);
       queryClient.invalidateQueries({ queryKey: ["portfolios"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders-portfolio", portfolioId] });
