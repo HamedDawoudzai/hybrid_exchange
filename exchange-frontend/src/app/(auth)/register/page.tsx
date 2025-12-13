@@ -63,15 +63,13 @@ export default function RegisterPage() {
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full p-12">
           {/* Logo - Extra Large with spin and float animation */}
-          <div className="mb-12 logo-hover-float">
-            <div className="logo-spin-settle">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/HD_investing_logo.png"
-                alt="HD Investing Corp"
-                className="w-[400px] h-[400px] object-contain drop-shadow-2xl"
-              />
-            </div>
+          <div className="mb-12">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/HD_investing_logo.png"
+              alt="HD Investing Corp"
+              className="w-[400px] h-[400px] object-contain drop-shadow-2xl animate-logo-spin-float"
+            />
           </div>
           
           {/* Decorative lines */}

@@ -1,6 +1,7 @@
 package com.exchange.service.impl;
 
 import com.exchange.dto.request.CreatePortfolioRequest;
+import com.exchange.dto.request.DepositRequest;
 import com.exchange.dto.response.HoldingResponse;
 import com.exchange.dto.response.PortfolioResponse;
 import com.exchange.entity.Holding;
@@ -34,6 +35,9 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final UserRepository userRepository;
     private final HoldingRepository holdingRepository;
     private final PriceService priceService;
+    private final com.exchange.repository.OrderRepository orderRepository;
+    private final com.exchange.repository.LimitOrderRepository limitOrderRepository;
+    private final com.exchange.repository.StopOrderRepository stopOrderRepository;
 
     @Override
     @Transactional
@@ -51,7 +55,6 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         log.info("Portfolio created: ID {}, User ID {}, Name {}", portfolio.getId(), userId, request.getName());
 
-        // include totalValue (zero on create; holdings added later)
         return PortfolioResponse.fromEntityWithHoldings(portfolio, null, BigDecimal.ZERO);
     }
 
@@ -134,29 +137,43 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     @Transactional
+    public PortfolioResponse deposit(Long userId, Long portfolioId, DepositRequest request) {
+        Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
+
+        // Deposit goes to user's cash balance, not portfolio
+        User user = portfolio.getUser();
+        user.setCashBalance(user.getCashBalance().add(request.getAmount()));
+        userRepository.save(user);
+
+        log.info("Deposit made: User ID {}, Amount {}", userId, request.getAmount());
+
+        return computePortfolioSummary(portfolio);
+    }
+
+    @Override
+    @Transactional
     public void deletePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
-        // Only block deletion if there are active holdings (positions)
-        // Orders are historical records and will be cascade deleted
-        if (!portfolio.getHoldings().isEmpty()) {
-            throw new BadRequestException("Cannot delete portfolio with existing holdings. Sell all positions first.");
-        }
+        // Remove holdings
+        holdingRepository.deleteAll(holdingRepository.findByPortfolioIdWithAsset(portfolioId));
+        // Remove related limit/stop orders and historical orders
+        limitOrderRepository.deleteByPortfolioId(portfolioId);
+        stopOrderRepository.deleteByPortfolioId(portfolioId);
+        orderRepository.deleteByPortfolioId(portfolioId);
 
-        // Orders will be cascade deleted due to CascadeType.ALL on the relationship
-        int orderCount = portfolio.getOrders().size();
-        
         portfolioRepository.delete(portfolio);
 
-        log.info("Portfolio deleted: ID {}, User ID {}, Orders cascade deleted: {}", portfolioId, userId, orderCount);
+        log.info("Portfolio deleted: ID {}, User ID {}", portfolioId, userId);
     }
 
     private PortfolioResponse computePortfolioSummary(Portfolio portfolio) {
-        // For list/summary: compute total from holdings (with current prices)
         List<Holding> holdings = holdingRepository.findByPortfolioIdWithAsset(portfolio.getId());
-        List<HoldingResponse> holdingResponses = new ArrayList<>();
         BigDecimal totalValue = BigDecimal.ZERO;
+
+        List<HoldingResponse> holdingResponses = new ArrayList<>();
 
         for (Holding holding : holdings) {
             BigDecimal currentPrice = null;
@@ -186,13 +203,12 @@ public class PortfolioServiceImpl implements PortfolioService {
                 totalValue = totalValue.add(marketValue);
             } catch (Exception e) {
                 log.warn("Failed to price holding {}: {}", holding.getAsset().getSymbol(), e.getMessage());
-                // Use cost basis as fallback for value calculation
+                // Use cost basis as fallback
                 marketValue = holding.getQuantity().multiply(holding.getAverageBuyPrice())
                         .setScale(4, RoundingMode.HALF_UP);
                 totalValue = totalValue.add(marketValue);
             }
 
-            // Always include holdings in the response, even if price fetch failed
             holdingResponses.add(HoldingResponse.builder()
                     .id(holding.getId())
                     .symbol(holding.getAsset().getSymbol())

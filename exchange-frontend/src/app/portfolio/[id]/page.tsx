@@ -32,6 +32,7 @@ export default function PortfolioDetailPage() {
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
 
   const cashBalance = user?.cashBalance ?? 0;
+  const reservedCash = user?.reservedCash ?? 0;
 
   const { totalValue, invested, profitLoss, profitLossPercent } = useMemo(() => {
     if (!portfolio) return { totalValue: 0, invested: 0, profitLoss: 0, profitLossPercent: 0 };
@@ -47,17 +48,21 @@ export default function PortfolioDetailPage() {
       return sum + h.quantity * (h.averageBuyPrice ?? 0);
     }, 0);
 
-    const tv = portfolio.totalValue ?? currentValue;
-    const pnl = currentValue - costBasis;
-    const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+    // Global net contributed cash
+    const netContributed = (user?.totalDeposits ?? 0) - (user?.totalWithdrawals ?? 0);
+    // Include reserved cash in net worth since it's still part of user's assets
+    const netWorth = currentValue + cashBalance + reservedCash;
+
+    const pnl = netWorth - netContributed;
+    const pnlPercent = netContributed > 0 ? (pnl / netContributed) * 100 : 0;
 
     return { 
-      totalValue: tv, 
+      totalValue: currentValue, 
       invested: costBasis, 
       profitLoss: pnl,
       profitLossPercent: pnlPercent
     };
-  }, [portfolio]);
+  }, [portfolio, user, cashBalance, reservedCash]);
 
   const holdingQuantity = useMemo(() => {
     if (!portfolio?.holdings || !symbol) return 0;
@@ -65,7 +70,13 @@ export default function PortfolioDetailPage() {
     return holding?.quantity ?? 0;
   }, [portfolio?.holdings, symbol]);
 
-  const maxBuyQuantity = currentPrice > 0 ? cashBalance / currentPrice : 0;
+  // Calculate max buy quantity with precision handling to avoid going over cash balance
+  const maxBuyQuantity = useMemo(() => {
+    if (currentPrice <= 0) return 0;
+    // Floor to 6 decimal places to ensure we don't exceed cash balance
+    const rawQty = cashBalance / currentPrice;
+    return Math.floor(rawQty * 1000000) / 1000000;
+  }, [cashBalance, currentPrice]);
 
   useEffect(() => {
     if (!symbol || symbol.length < 1) {
@@ -110,8 +121,13 @@ export default function PortfolioDetailPage() {
 
   const handlePercentage = (percent: number) => {
     if (tradeType === "BUY") {
-      const qty = (maxBuyQuantity * percent) / 100;
-      setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      if (percent === 100) {
+        // For 100%, use exact max quantity to avoid exceeding balance
+        setQuantity(maxBuyQuantity > 0 ? maxBuyQuantity.toFixed(6) : "");
+      } else {
+        const qty = (maxBuyQuantity * percent) / 100;
+        setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      }
     } else {
       const qty = (holdingQuantity * percent) / 100;
       setQuantity(qty > 0 ? qty.toFixed(6) : "");
@@ -122,8 +138,12 @@ export default function PortfolioDetailPage() {
   const handleSliderChange = (value: number) => {
     setSliderValue(value);
     if (tradeType === "BUY") {
-      const qty = (maxBuyQuantity * value) / 100;
-      setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      if (value === 100) {
+        setQuantity(maxBuyQuantity > 0 ? maxBuyQuantity.toFixed(6) : "");
+      } else {
+        const qty = (maxBuyQuantity * value) / 100;
+        setQuantity(qty > 0 ? qty.toFixed(6) : "");
+      }
     } else {
       const qty = (holdingQuantity * value) / 100;
       setQuantity(qty > 0 ? qty.toFixed(6) : "");

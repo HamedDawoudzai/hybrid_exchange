@@ -11,6 +11,13 @@ import type {
   OrderRequest,
   PriceData,
   User,
+  WatchlistItem,
+  LimitOrder,
+  LimitOrderRequest,
+  LimitOrderStatus,
+  StopOrder,
+  StopOrderRequest,
+  StopOrderStatus,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
@@ -45,24 +52,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle response errors with 401 redirect
+// Basic response error pass-through (customize as needed)
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    // On 401 Unauthorized, clear auth and redirect to login
-    if (error.response?.status === 401) {
-      if (typeof window !== "undefined") {
-        // Clear auth store
-        localStorage.removeItem("auth-store");
-        // Only redirect if not already on auth pages
-        const path = window.location.pathname;
-        if (!path.startsWith("/login") && !path.startsWith("/register")) {
-          window.location.href = "/login";
-        }
-      }
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 /**
@@ -80,6 +73,7 @@ export const authApi = {
 export const userApi = {
   getCurrentUser: () => api.get<ApiResponse<User>>("/users/me"),
   depositCash: (amount: number) => api.post<ApiResponse<User>>("/users/cash/deposit", { amount }),
+  withdrawCash: (amount: number) => api.post<ApiResponse<User>>("/users/cash/withdraw", { amount }),
 };
 
 /**
@@ -89,6 +83,8 @@ export const portfolioApi = {
   getAll: () => api.get<ApiResponse<Portfolio[]>>("/portfolios"),
   getById: (id: number) => api.get<ApiResponse<Portfolio>>(`/portfolios/${id}`),
   create: (data: CreatePortfolioRequest) => api.post<ApiResponse<Portfolio>>("/portfolios", data),
+  deposit: (id: number, amount: number) =>
+    api.post<ApiResponse<Portfolio>>(`/portfolios/${id}/deposit`, { amount }),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/portfolios/${id}`),
 };
 
@@ -127,4 +123,36 @@ export const priceApi = {
     api.get<ApiResponse<PriceData[]>>(`/prices/crypto/${symbol}/history`, {
       params: { granularity, from, to },
     }),
+};
+
+/**
+ * Watchlist API endpoints
+ */
+export const watchlistApi = {
+  getWatchlist: () => api.get<ApiResponse<WatchlistItem[]>>("/watchlist"),
+  addToWatchlist: (symbol: string) => api.post<ApiResponse<WatchlistItem>>(`/watchlist/${symbol}`),
+  removeFromWatchlist: (symbol: string) => api.delete<ApiResponse<void>>(`/watchlist/${symbol}`),
+  checkWatchlist: (symbol: string) => api.get<ApiResponse<{ inWatchlist: boolean }>>(`/watchlist/check/${symbol}`),
+};
+
+/**
+ * Limit Order API endpoints
+ */
+export const limitOrderApi = {
+  create: (data: LimitOrderRequest) => api.post<ApiResponse<LimitOrder>>("/limit-orders", data),
+  getAll: (status?: LimitOrderStatus) => 
+    api.get<ApiResponse<LimitOrder[]>>("/limit-orders", { params: status ? { status } : {} }),
+  getPending: () => api.get<ApiResponse<LimitOrder[]>>("/limit-orders/pending"),
+  cancel: (orderId: number) => api.post<ApiResponse<LimitOrder>>(`/limit-orders/${orderId}/cancel`),
+};
+
+/**
+ * Stop Order API endpoints
+ */
+export const stopOrderApi = {
+  create: (data: StopOrderRequest) => api.post<ApiResponse<StopOrder>>("/stop-orders", data),
+  getAll: (status?: StopOrderStatus) =>
+    api.get<ApiResponse<StopOrder[]>>("/stop-orders", { params: status ? { status } : {} }),
+  getPending: () => api.get<ApiResponse<StopOrder[]>>("/stop-orders/pending"),
+  cancel: (orderId: number) => api.post<ApiResponse<StopOrder>>(`/stop-orders/${orderId}/cancel`),
 };

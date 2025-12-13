@@ -45,6 +45,14 @@ public class User {
     @Column(name = "cash_balance", nullable = false, precision = 19, scale = 4)
     private java.math.BigDecimal cashBalance = java.math.BigDecimal.ZERO;
 
+    @Builder.Default
+    @Column(name = "total_deposits", nullable = false, precision = 19, scale = 4)
+    private java.math.BigDecimal totalDeposits = java.math.BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "total_withdrawals", nullable = false, precision = 19, scale = 4)
+    private java.math.BigDecimal totalWithdrawals = java.math.BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Portfolio> portfolios = new ArrayList<>();

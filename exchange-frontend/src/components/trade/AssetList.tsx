@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Asset } from "@/types";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import { WatchlistStar } from "@/components/watchlist/WatchlistStar";
 
 interface AssetListProps {
   assets: Asset[];
@@ -74,21 +75,24 @@ export function AssetList({ assets, isLoading }: AssetListProps) {
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="font-semibold text-white">
-                  {asset.currentPrice != null ? formatCurrency(asset.currentPrice) : "—"}
-                </p>
-                {change != null && (
-                  <div className={`flex items-center justify-end gap-1 text-xs font-semibold ${changeClass}`}>
-                    <span className={change >= 0 ? "rotate-0" : "rotate-180"}>
-                      {change !== 0 && "▲"}
-                    </span>
-                    <span>
-                      {priceChange != null && `${priceChange >= 0 ? "+" : ""}${formatCurrency(Math.abs(priceChange))} `}
-                      ({formatPercent(change)})
-                    </span>
-                  </div>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="font-semibold text-white">
+                    {asset.currentPrice != null ? formatCurrency(asset.currentPrice) : "—"}
+                  </p>
+                  {change != null && (
+                    <div className={`flex items-center justify-end gap-1 text-xs font-semibold ${changeClass}`}>
+                      <span className={change >= 0 ? "rotate-0" : "rotate-180"}>
+                        {change !== 0 && "▲"}
+                      </span>
+                      <span>
+                        {priceChange != null && `${priceChange >= 0 ? "+" : ""}${formatCurrency(Math.abs(priceChange))} `}
+                        ({formatPercent(change)})
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <WatchlistStar symbol={asset.symbol} size="sm" />
               </div>
             </div>
           </Link>

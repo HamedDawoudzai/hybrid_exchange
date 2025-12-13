@@ -6,7 +6,6 @@ import com.exchange.entity.Asset;
 import com.exchange.entity.Holding;
 import com.exchange.entity.Order;
 import com.exchange.entity.Portfolio;
-import com.exchange.repository.UserRepository;
 import com.exchange.enums.OrderStatus;
 import com.exchange.enums.OrderType;
 import com.exchange.exception.BadRequestException;
@@ -15,6 +14,7 @@ import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.HoldingRepository;
 import com.exchange.repository.OrderRepository;
 import com.exchange.repository.PortfolioRepository;
+import com.exchange.repository.UserRepository;
 import com.exchange.service.AssetService;
 import com.exchange.service.OrderService;
 import com.exchange.service.PriceService;
@@ -47,29 +47,39 @@ public class OrderServiceImpl implements OrderService {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(request.getPortfolioId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", request.getPortfolioId()));
 
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        var user = portfolio.getUser();
 
         Asset asset = assetService.findBySymbol(request.getSymbol());
 
         BigDecimal currentPrice = priceService.getCurrentPrice(request.getSymbol(), asset.getType());
 
-        BigDecimal totalAmount = request.getQuantity()
+        BigDecimal requestedQuantity = request.getQuantity();
+        BigDecimal usedQuantity = requestedQuantity;
+        BigDecimal totalAmount = usedQuantity
                 .multiply(currentPrice)
                 .setScale(4, RoundingMode.HALF_UP);
+        BigDecimal executionPrice = currentPrice; // Default to current price, will be updated for SELL orders
 
         if (request.getType() == OrderType.BUY) {
             BigDecimal cashBalance = user.getCashBalance();
-            
-            // Handle floating-point rounding: if difference is less than $0.01, cap to balance
-            BigDecimal difference = totalAmount.subtract(cashBalance);
-            if (difference.compareTo(BigDecimal.ZERO) > 0 && difference.compareTo(new BigDecimal("0.01")) <= 0) {
-                // Tiny rounding difference - cap total to available balance
-                log.debug("Adjusting totalAmount from {} to {} due to rounding (diff: {})", 
-                        totalAmount, cashBalance, difference);
-                totalAmount = cashBalance;
+            // Cap quantity to what the user can actually afford at current price to avoid failures on 100% slider
+            BigDecimal maxAffordableQty = cashBalance.divide(currentPrice, 6, RoundingMode.FLOOR);
+            if (maxAffordableQty.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InsufficientBalanceException(
+                        String.format("Insufficient balance. Required: %s, Available: %s",
+                                totalAmount, cashBalance));
             }
-            
+            if (requestedQuantity.compareTo(maxAffordableQty) > 0) {
+                usedQuantity = maxAffordableQty;
+                totalAmount = usedQuantity.multiply(currentPrice).setScale(4, RoundingMode.HALF_UP);
+            }
+            BigDecimal difference = totalAmount.subtract(cashBalance);
+
+            // Allow for small floating-point rounding errors (e.g., $0.01 difference)
+            if (difference.compareTo(BigDecimal.ZERO) > 0 && difference.compareTo(new BigDecimal("0.01")) <= 0) {
+                totalAmount = cashBalance; // Cap to available balance
+            }
+
             if (cashBalance.compareTo(totalAmount) < 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient balance. Required: %s, Available: %s",
@@ -87,10 +97,14 @@ public class OrderServiceImpl implements OrderService {
                             .averageBuyPrice(BigDecimal.ZERO)
                             .build());
 
+            // Handle null averageBuyPrice (shouldn't happen, but safety check)
+            BigDecimal avgPrice = holding.getAverageBuyPrice() != null 
+                    ? holding.getAverageBuyPrice() 
+                    : BigDecimal.ZERO;
             BigDecimal totalCost = holding.getQuantity()
-                    .multiply(holding.getAverageBuyPrice())
+                    .multiply(avgPrice)
                     .add(totalAmount);
-            BigDecimal newQuantity = holding.getQuantity().add(request.getQuantity());
+            BigDecimal newQuantity = holding.getQuantity().add(usedQuantity);
             BigDecimal newAveragePrice = newQuantity.compareTo(BigDecimal.ZERO) > 0
                     ? totalCost.divide(newQuantity, 4, RoundingMode.HALF_UP)
                     : currentPrice;
@@ -106,13 +120,21 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new InsufficientBalanceException(
                             String.format("Insufficient holdings. You don't own any %s", request.getSymbol())));
 
-            if (holding.getQuantity().compareTo(request.getQuantity()) < 0) {
+            if (holding.getQuantity().compareTo(requestedQuantity) < 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient holdings. Required: %s, Available: %s",
-                                request.getQuantity(), holding.getQuantity()));
+                                requestedQuantity, holding.getQuantity()));
             }
 
-            BigDecimal newQuantity = holding.getQuantity().subtract(request.getQuantity());
+            // For SELL orders, use the current market price
+            // This ensures users get the price they see (or close to it, accounting for market movement)
+            // If they see a loss and sell, they'll realize that loss (or current market price if it recovered)
+            executionPrice = currentPrice;
+            
+            // Recalculate totalAmount using current market price
+            totalAmount = requestedQuantity.multiply(executionPrice).setScale(4, RoundingMode.HALF_UP);
+
+            BigDecimal newQuantity = holding.getQuantity().subtract(requestedQuantity);
             if (newQuantity.compareTo(BigDecimal.ZERO) == 0) {
                 holdingRepository.delete(holding);
             } else {
@@ -127,15 +149,14 @@ public class OrderServiceImpl implements OrderService {
         }
 
         userRepository.save(user);
-        portfolioRepository.save(portfolio);
 
         Order order = Order.builder()
                 .portfolio(portfolio)
                 .asset(asset)
                 .type(request.getType())
                 .status(OrderStatus.COMPLETED)
-                .quantity(request.getQuantity())
-                .pricePerUnit(currentPrice)
+                .quantity(usedQuantity)
+                .pricePerUnit(executionPrice)
                 .totalAmount(totalAmount)
                 .build();
 

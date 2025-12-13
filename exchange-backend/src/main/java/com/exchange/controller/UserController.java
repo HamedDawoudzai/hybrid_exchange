@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class UserController {
 
-    private static final BigDecimal MAX_DEPOSIT = new BigDecimal("1000000"); // optional dummy cap
+    private static final BigDecimal MAX_DEPOSIT = new BigDecimal("1000000000"); // 1B cap
 
     private final UserService userService;
 
@@ -44,5 +44,19 @@ public class UserController {
 
         UserResponse user = userService.depositCash(userPrincipal.getId(), amount);
         return ResponseEntity.ok(ApiResponse.success("Deposit successful", user));
+    }
+
+    @PostMapping("/cash/withdraw")
+    public ResponseEntity<ApiResponse<UserResponse>> withdrawCash(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody @jakarta.validation.Valid DepositRequest request) {
+
+        BigDecimal amount = request.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Withdrawal amount must be positive");
+        }
+
+        UserResponse user = userService.withdrawCash(userPrincipal.getId(), amount);
+        return ResponseEntity.ok(ApiResponse.success("Withdrawal successful", user));
     }
 }
