@@ -2,28 +2,30 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "gold";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
 }
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-indigo-500 text-white hover:bg-indigo-600 border border-indigo-500/70 shadow-sm shadow-indigo-500/20",
+    "bg-gradient-to-r from-gold-600 to-gold-500 text-black hover:shadow-gold border-0",
   secondary:
-    "bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700",
+    "bg-neutral-800 text-neutral-100 hover:bg-neutral-700 border border-neutral-700",
   outline:
-    "border border-slate-700 text-slate-100 hover:bg-slate-800/60",
+    "border border-neutral-700 text-neutral-300 hover:border-gold-600/50 hover:text-white hover:bg-gold-600/5",
   ghost:
-    "text-slate-100 hover:bg-slate-800/60",
+    "text-neutral-300 hover:bg-neutral-800/60 hover:text-white",
   danger:
-    "bg-rose-500 text-white hover:bg-rose-600 border border-rose-500/70 shadow-sm shadow-rose-500/20",
+    "bg-danger-500 text-white hover:bg-danger-600 border border-danger-500/70",
+  gold:
+    "bg-gradient-to-r from-gold-600 to-gold-500 text-black font-semibold hover:shadow-gold",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
-  sm: "px-3 py-2 text-sm rounded-md",
-  md: "px-4 py-2.5 text-sm rounded-lg",
-  lg: "px-5 py-3 text-base rounded-lg",
+  sm: "px-4 py-2 text-sm rounded",
+  md: "px-5 py-2.5 text-sm rounded",
+  lg: "px-6 py-3 text-base rounded",
 };
 
 const Spinner = () => (
@@ -66,8 +68,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-900",
+          "inline-flex items-center justify-center font-medium transition-all duration-200",
+          "focus:outline-none focus:ring-2 focus:ring-gold-600/50 focus:ring-offset-1 focus:ring-offset-black",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantClasses[variant],
           sizeClasses[size],

@@ -20,6 +20,9 @@ public class WebClientConfig {
     @Value("${app.coinbase.base-url}")
     private String coinbaseBaseUrl;
 
+    @Value("${app.polygon.base-url}")
+    private String polygonBaseUrl;
+
     @Bean
     public WebClient finnhubWebClient() {
         String baseUrl = Objects.requireNonNull(finnhubBaseUrl, "finnhubBaseUrl must not be null");
@@ -31,6 +34,14 @@ public class WebClientConfig {
     @Bean
     public WebClient coinbaseWebClient() {
         String baseUrl = Objects.requireNonNull(coinbaseBaseUrl, "coinbaseBaseUrl must not be null");
+        return WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+    @Bean
+    public WebClient polygonWebClient() {
+        String baseUrl = Objects.requireNonNull(polygonBaseUrl, "polygonBaseUrl must not be null");
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .build();

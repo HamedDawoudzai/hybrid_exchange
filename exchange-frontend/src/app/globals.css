@@ -2,40 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* HD Investing Corp - Premium Dark Theme */
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 2, 6, 23;
+  --brand-black: #000000;
+  --brand-charcoal: #0a0a0a;
+  --brand-onyx: #111111;
+  --brand-graphite: #1a1a1a;
+  --brand-white: #ffffff;
+  --brand-ivory: #fafafa;
+  --gold-primary: #d4af37;
+  --gold-secondary: #c9a962;
+  --gold-light: #e8d5a3;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--brand-ivory);
+  background: var(--brand-black);
   min-height: 100vh;
+  font-feature-settings: "kern" 1, "liga" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* Elegant background pattern */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at top, rgba(201, 169, 98, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(201, 169, 98, 0.02) 0%, transparent 50%),
+    linear-gradient(180deg, var(--brand-black) 0%, var(--brand-charcoal) 50%, var(--brand-black) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Custom scrollbar - elegant dark */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: var(--brand-charcoal);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: linear-gradient(180deg, #333333, #222222);
   border-radius: 4px;
+  border: 1px solid #333333;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: linear-gradient(180deg, #444444, #333333);
 }
 
 /* Remove number input spinners */
@@ -49,3 +76,137 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Selection color */
+::selection {
+  background: rgba(201, 169, 98, 0.3);
+  color: var(--brand-white);
+}
+
+/* Focus ring styles */
+*:focus-visible {
+  outline: 2px solid var(--gold-secondary);
+  outline-offset: 2px;
+}
+
+/* Elegant text utilities */
+@layer utilities {
+  .text-gradient-gold {
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-gradient-gold {
+    border-image: linear-gradient(135deg, var(--gold-secondary), var(--gold-primary), var(--gold-secondary)) 1;
+  }
+
+  .bg-glass {
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .bg-glass-light {
+    background: rgba(26, 26, 26, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .font-elegant {
+    font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+    letter-spacing: 0.02em;
+  }
+
+  .tracking-elegant {
+    letter-spacing: 0.15em;
+  }
+
+  .shadow-gold-glow {
+    box-shadow: 0 0 30px -5px rgba(201, 169, 98, 0.3);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Gold line decorations (like in the logo) */
+.gold-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-secondary), transparent);
+}
+
+.gold-line-solid {
+  height: 1px;
+  background: var(--gold-secondary);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -10px rgba(201, 169, 98, 0.2);
+}
+
+/* Button styles - premium feel */
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-secondary) 0%, var(--gold-primary) 100%);
+  color: var(--brand-black);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-gold:hover {
+  box-shadow: 0 4px 20px -4px rgba(201, 169, 98, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-outline-gold {
+  border: 1px solid var(--gold-secondary);
+  color: var(--gold-secondary);
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-gold:hover {
+  background: rgba(201, 169, 98, 0.1);
+  box-shadow: 0 0 20px -5px rgba(201, 169, 98, 0.3);
+}

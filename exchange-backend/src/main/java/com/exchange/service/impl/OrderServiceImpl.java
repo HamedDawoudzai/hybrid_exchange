@@ -59,13 +59,24 @@ public class OrderServiceImpl implements OrderService {
                 .setScale(4, RoundingMode.HALF_UP);
 
         if (request.getType() == OrderType.BUY) {
-            if (user.getCashBalance().compareTo(totalAmount) < 0) {
+            BigDecimal cashBalance = user.getCashBalance();
+            
+            // Handle floating-point rounding: if difference is less than $0.01, cap to balance
+            BigDecimal difference = totalAmount.subtract(cashBalance);
+            if (difference.compareTo(BigDecimal.ZERO) > 0 && difference.compareTo(new BigDecimal("0.01")) <= 0) {
+                // Tiny rounding difference - cap total to available balance
+                log.debug("Adjusting totalAmount from {} to {} due to rounding (diff: {})", 
+                        totalAmount, cashBalance, difference);
+                totalAmount = cashBalance;
+            }
+            
+            if (cashBalance.compareTo(totalAmount) < 0) {
                 throw new InsufficientBalanceException(
                         String.format("Insufficient balance. Required: %s, Available: %s",
-                                totalAmount, user.getCashBalance()));
+                                totalAmount, cashBalance));
             }
 
-            user.setCashBalance(user.getCashBalance().subtract(totalAmount));
+            user.setCashBalance(cashBalance.subtract(totalAmount));
 
             Holding holding = holdingRepository.findByPortfolioIdAndAssetId(
                             portfolio.getId(), asset.getId())

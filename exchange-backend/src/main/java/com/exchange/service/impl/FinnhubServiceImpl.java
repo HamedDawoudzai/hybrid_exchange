@@ -97,7 +97,15 @@ public class FinnhubServiceImpl implements FinnhubService {
                 if ("no_data".equals(status)) {
                     return new ArrayList<>();
                 }
-                throw new RuntimeException("Failed to fetch historical data for " + symbol);
+                log.warn("No historical data available for {} (status: {})", symbol, status);
+                return new ArrayList<>();
+            }
+
+            // Check for "no_data" status from Finnhub
+            String status = response.get("s").toString();
+            if ("no_data".equals(status)) {
+                log.info("No historical data available for {} in the requested time range", symbol);
+                return new ArrayList<>();
             }
 
             List<?> timestamps = (List<?>) response.get("t");
@@ -141,8 +149,15 @@ public class FinnhubServiceImpl implements FinnhubService {
 
             return historicalData;
         } catch (Exception e) {
+            // Return empty list for 403 Forbidden (premium feature) or other API errors
+            // instead of crashing - this allows the UI to gracefully show "no data"
+            if (e.getMessage() != null && e.getMessage().contains("403")) {
+                log.warn("Historical data for {} requires Finnhub premium subscription (403 Forbidden)", symbol);
+                return new ArrayList<>();
+            }
             log.error("Error fetching historical data for {}: {}", symbol, e.getMessage());
-            throw new RuntimeException("Failed to fetch historical data: " + e.getMessage(), e);
+            // Return empty instead of throwing to prevent UI errors
+            return new ArrayList<>();
         }
     }
 

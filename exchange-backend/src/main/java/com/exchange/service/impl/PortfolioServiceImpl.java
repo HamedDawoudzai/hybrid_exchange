@@ -81,43 +81,52 @@ public class PortfolioServiceImpl implements PortfolioService {
         BigDecimal totalValue = BigDecimal.ZERO;
 
         for (Holding holding : holdings) {
+            BigDecimal currentPrice = null;
+            BigDecimal marketValue = null;
+            BigDecimal gainLoss = null;
+            BigDecimal gainLossPercent = null;
+
             try {
-                BigDecimal currentPrice = priceService.getCurrentPrice(
+                currentPrice = priceService.getCurrentPrice(
                         holding.getAsset().getSymbol(),
                         holding.getAsset().getType());
 
-                BigDecimal marketValue = holding.getQuantity()
+                marketValue = holding.getQuantity()
                         .multiply(currentPrice)
                         .setScale(4, RoundingMode.HALF_UP);
 
-                BigDecimal gainLoss = marketValue.subtract(
+                gainLoss = marketValue.subtract(
                         holding.getQuantity().multiply(holding.getAverageBuyPrice())
                                 .setScale(4, RoundingMode.HALF_UP));
 
-                BigDecimal gainLossPercent = holding.getAverageBuyPrice().compareTo(BigDecimal.ZERO) > 0
+                gainLossPercent = holding.getAverageBuyPrice().compareTo(BigDecimal.ZERO) > 0
                         ? gainLoss.divide(
                                 holding.getQuantity().multiply(holding.getAverageBuyPrice()),
                                 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
                         : BigDecimal.ZERO;
 
                 totalValue = totalValue.add(marketValue);
-
-                holdingResponses.add(HoldingResponse.builder()
-                        .id(holding.getId())
-                        .symbol(holding.getAsset().getSymbol())
-                        .assetName(holding.getAsset().getName())
-                        .assetType(holding.getAsset().getType())
-                        .quantity(holding.getQuantity())
-                        .averageBuyPrice(holding.getAverageBuyPrice())
-                        .currentPrice(currentPrice)
-                        .currentValue(marketValue)
-                        .profitLoss(gainLoss)
-                        .profitLossPercent(gainLossPercent)
-                        .build());
             } catch (Exception e) {
                 log.warn("Failed to fetch price for {}: {}", holding.getAsset().getSymbol(), e.getMessage());
-                // Continue with other holdings even if one fails
+                // Use cost basis as fallback for value calculation
+                marketValue = holding.getQuantity().multiply(holding.getAverageBuyPrice())
+                        .setScale(4, RoundingMode.HALF_UP);
+                totalValue = totalValue.add(marketValue);
             }
+
+            // Always add the holding to the response, even if price fetch failed
+            holdingResponses.add(HoldingResponse.builder()
+                    .id(holding.getId())
+                    .symbol(holding.getAsset().getSymbol())
+                    .assetName(holding.getAsset().getName())
+                    .assetType(holding.getAsset().getType())
+                    .quantity(holding.getQuantity())
+                    .averageBuyPrice(holding.getAverageBuyPrice())
+                    .currentPrice(currentPrice)
+                    .currentValue(marketValue)
+                    .profitLoss(gainLoss)
+                    .profitLossPercent(gainLossPercent)
+                    .build());
         }
 
         return PortfolioResponse.fromEntityWithHoldings(portfolio, holdingResponses, totalValue);
@@ -129,39 +138,75 @@ public class PortfolioServiceImpl implements PortfolioService {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(portfolioId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
+        // Only block deletion if there are active holdings (positions)
+        // Orders are historical records and will be cascade deleted
         if (!portfolio.getHoldings().isEmpty()) {
-            throw new BadRequestException("Cannot delete portfolio with existing holdings");
-        }
-        if (!portfolio.getOrders().isEmpty()) {
-            throw new BadRequestException("Cannot delete portfolio with existing orders");
+            throw new BadRequestException("Cannot delete portfolio with existing holdings. Sell all positions first.");
         }
 
+        // Orders will be cascade deleted due to CascadeType.ALL on the relationship
+        int orderCount = portfolio.getOrders().size();
+        
         portfolioRepository.delete(portfolio);
 
-        log.info("Portfolio deleted: ID {}, User ID {}", portfolioId, userId);
+        log.info("Portfolio deleted: ID {}, User ID {}, Orders cascade deleted: {}", portfolioId, userId, orderCount);
     }
 
     private PortfolioResponse computePortfolioSummary(Portfolio portfolio) {
         // For list/summary: compute total from holdings (with current prices)
         List<Holding> holdings = holdingRepository.findByPortfolioIdWithAsset(portfolio.getId());
+        List<HoldingResponse> holdingResponses = new ArrayList<>();
         BigDecimal totalValue = BigDecimal.ZERO;
 
         for (Holding holding : holdings) {
+            BigDecimal currentPrice = null;
+            BigDecimal marketValue = null;
+            BigDecimal gainLoss = null;
+            BigDecimal gainLossPercent = null;
+
             try {
-                BigDecimal currentPrice = priceService.getCurrentPrice(
+                currentPrice = priceService.getCurrentPrice(
                         holding.getAsset().getSymbol(),
                         holding.getAsset().getType());
 
-                BigDecimal marketValue = holding.getQuantity()
+                marketValue = holding.getQuantity()
                         .multiply(currentPrice)
                         .setScale(4, RoundingMode.HALF_UP);
+
+                gainLoss = marketValue.subtract(
+                        holding.getQuantity().multiply(holding.getAverageBuyPrice())
+                                .setScale(4, RoundingMode.HALF_UP));
+
+                gainLossPercent = holding.getAverageBuyPrice().compareTo(BigDecimal.ZERO) > 0
+                        ? gainLoss.divide(
+                                holding.getQuantity().multiply(holding.getAverageBuyPrice()),
+                                4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+                        : BigDecimal.ZERO;
 
                 totalValue = totalValue.add(marketValue);
             } catch (Exception e) {
                 log.warn("Failed to price holding {}: {}", holding.getAsset().getSymbol(), e.getMessage());
+                // Use cost basis as fallback for value calculation
+                marketValue = holding.getQuantity().multiply(holding.getAverageBuyPrice())
+                        .setScale(4, RoundingMode.HALF_UP);
+                totalValue = totalValue.add(marketValue);
             }
+
+            // Always include holdings in the response, even if price fetch failed
+            holdingResponses.add(HoldingResponse.builder()
+                    .id(holding.getId())
+                    .symbol(holding.getAsset().getSymbol())
+                    .assetName(holding.getAsset().getName())
+                    .assetType(holding.getAsset().getType())
+                    .quantity(holding.getQuantity())
+                    .averageBuyPrice(holding.getAverageBuyPrice())
+                    .currentPrice(currentPrice)
+                    .currentValue(marketValue)
+                    .profitLoss(gainLoss)
+                    .profitLossPercent(gainLossPercent)
+                    .build());
         }
 
-        return PortfolioResponse.fromEntityWithHoldings(portfolio, null, totalValue);
+        return PortfolioResponse.fromEntityWithHoldings(portfolio, holdingResponses, totalValue);
     }
 }

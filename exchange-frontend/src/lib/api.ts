@@ -45,10 +45,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Basic response error pass-through (customize as needed)
+// Handle response errors with 401 redirect
 api.interceptors.response.use(
   (res) => res,
-  (error) => Promise.reject(error)
+  (error) => {
+    // On 401 Unauthorized, clear auth and redirect to login
+    if (error.response?.status === 401) {
+      if (typeof window !== "undefined") {
+        // Clear auth store
+        localStorage.removeItem("auth-store");
+        // Only redirect if not already on auth pages
+        const path = window.location.pathname;
+        if (!path.startsWith("/login") && !path.startsWith("/register")) {
+          window.location.href = "/login";
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 /**
