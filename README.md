@@ -2,12 +2,12 @@
 
 A hybrid stock + crypto exchange with a Spring Boot backend and Next.js frontend.
 
-## 🎯 Current State
+## Current State
 
 - Backend: Implemented JWT auth, Redis-backed JWT blacklist, rate limiting, price caching, Redis serialization fixes, Coinbase/Finnhub price integrations, seed data, improved error handling, and `.env` support. End-to-end flows for register/login/logout, prices (stock/crypto), portfolios (create/deposit/delete), and orders.
 - Frontend: Next.js App Router with dark/glass UI, auth flows (login/register), portfolios (list/detail/create), trading (assets list, symbol page with live price/history and orders), orders history, charts via Recharts, toasts via Sonner, React Query + Zustand state, Axios API client with auth header.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 hybrid_exchange/
@@ -16,7 +16,7 @@ hybrid_exchange/
 └── docker-compose.yml    # PostgreSQL + Redis
 ```
 
-## 🚀 Tech Stack
+## Tech Stack
 
 **Backend**
 - Java 17+, Spring Boot 3.2+
@@ -35,14 +35,14 @@ hybrid_exchange/
 - Finnhub (stock prices)
 - Coinbase Exchange (crypto prices)
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Java 17+
 - Node.js 18+
 - Docker & Docker Compose
 - Maven 3.8+
 
-## 🛠️ Setup
+## Setup
 
 ### 1) Infra (Postgres + Redis)
 ```bash
@@ -66,7 +66,7 @@ npm run dev
 # Runs on http://localhost:3000
 ```
 
-## 🔧 Environment
+## Environment
 
 Create `.env` in `exchange-backend` (or export env vars):
 ```
@@ -88,12 +88,12 @@ app.coinbase.base-url=https://api.exchange.coinbase.com
 
 Frontend uses `/api` rewrites to the backend; no API keys stored in the frontend.
 
-## 🌱 Database
+## Database
 
 - Schema: users, assets, portfolios, holdings, orders (status/type as varchar).
 - Seed script `seed_all.sql` truncates and seeds users/assets/portfolios/holdings/orders.
 
-## 🔌 Backend Highlights
+## Backend Highlights
 
 - JWT auth with blacklist (Redis) + logout invalidation
 - Rate limiting (Redis) on auth/price endpoints
@@ -101,7 +101,7 @@ Frontend uses `/api` rewrites to the backend; no API keys stored in the frontend
 - Finnhub (stocks) + Coinbase (crypto) live prices and OHLC
 - Portfolio deposit/delete handling with better errors
 
-## 🎨 Frontend Highlights
+## Frontend Highlights
 
 - Auth: login/register, JWT header via Axios, Zustand store, toasts on success/fail
 - Portfolios: list, detail, create (modal), holdings display
@@ -109,7 +109,7 @@ Frontend uses `/api` rewrites to the backend; no API keys stored in the frontend
 - Orders: user-wide history with sorting
 - UI: dark/glass theme, responsive, Recharts price chart, Sonner toasts
 
-## 🧪 Testing
+## Testing
 
 Backend:
 ```bash
@@ -124,7 +124,7 @@ npm run lint
 npm run build
 ```
 
-## 🔜 Nice-to-Haves
+## Nice-to-Haves
 
 - Auth guard for protected routes (redirect to /login)
 - Mobile drawer for header nav
