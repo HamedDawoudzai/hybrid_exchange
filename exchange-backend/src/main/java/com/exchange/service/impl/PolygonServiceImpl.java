@@ -32,10 +32,17 @@ public class PolygonServiceImpl implements PolygonService {
         this.apiKey = apiKey;
     }
 
+    /** Max retries for rate-limited requests */
+    private static final int MAX_RETRIES = 3;
+
     @Override
     public PriceResponse getStockQuote(String symbol) {
+        return getStockQuoteWithRetry(symbol, 0);
+    }
+
+    private PriceResponse getStockQuoteWithRetry(String symbol, int attempt) {
         try {
-            log.debug("Fetching Polygon quote for {}", symbol);
+            log.debug("Fetching Polygon quote for {} (attempt {})", symbol, attempt + 1);
 
             // Use Previous Close endpoint (works on free tier)
             @SuppressWarnings("unchecked")
@@ -70,45 +77,10 @@ public class PolygonServiceImpl implements PolygonService {
             BigDecimal low = toBigDecimal(bar.get("l"));
             Long volume = toLong(bar.get("v"));
 
-            // The /prev endpoint returns the previous trading day's aggregated bar
-            // We're using that day's close as the current price (free tier limitation)
-            // To get the true previous close (close of day before previous), fetch from historical data
-            BigDecimal previousClose = null;
-            try {
-                // Fetch 2 days of historical data to get the day-before's close
-                java.time.LocalDate today = java.time.LocalDate.now();
-                java.time.LocalDate twoDaysAgo = today.minusDays(2);
-                String dateStr = twoDaysAgo.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                
-                @SuppressWarnings("unchecked")
-                Map<String, Object> histResponse = webClient.get()
-                        .uri("/v2/aggs/ticker/{symbol}/range/1/day/{from}/{to}?apiKey={apiKey}&limit=2",
-                                symbol.toUpperCase(), dateStr, dateStr, apiKey)
-                        .retrieve()
-                        .bodyToMono(Map.class)
-                        .block();
-                
-                if (histResponse != null && ("OK".equals(histResponse.get("status")) || "DELAYED".equals(histResponse.get("status")))) {
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> histResults = (List<Map<String, Object>>) histResponse.get("results");
-                    if (histResults != null && histResults.size() >= 2) {
-                        // Get the earlier day's close (day before previous)
-                        Map<String, Object> earlierBar = histResults.get(0);
-                        previousClose = toBigDecimal(earlierBar.get("c"));
-                    }
-                }
-            } catch (Exception e) {
-                log.debug("Could not fetch historical data for previous close: {}", e.getMessage());
-            }
-            
-            // Fallback: if we couldn't get historical data, use previous day's open as approximation
-            // (This is not ideal but better than using close which would make change = 0)
-            if (previousClose == null) {
-                previousClose = open;
-                log.debug("Using previous day's open as approximation for previous close (historical fetch failed)");
-            }
-            
-            // Calculate change from previous close to current price (previous day's close)
+            // Use open as previousClose approximation (avoids extra API call that burns rate limit)
+            BigDecimal previousClose = open;
+
+            // Calculate change from previous close to current price
             BigDecimal change = close.subtract(previousClose);
             BigDecimal changePercent = previousClose.compareTo(BigDecimal.ZERO) > 0
                     ? change.divide(previousClose, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
@@ -130,6 +102,13 @@ public class PolygonServiceImpl implements PolygonService {
                     .build();
 
         } catch (WebClientResponseException e) {
+            // Retry on 429 rate limit with exponential backoff
+            if (e.getStatusCode().value() == 429 && attempt < MAX_RETRIES) {
+                long waitMs = (long) Math.pow(2, attempt) * 15_000L; // 15s, 30s, 60s
+                log.warn("Polygon rate limited for {} (attempt {}), retrying in {}ms", symbol, attempt + 1, waitMs);
+                try { Thread.sleep(waitMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                return getStockQuoteWithRetry(symbol, attempt + 1);
+            }
             log.error("Polygon API error for {}: {} - {}", symbol, e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("Failed to fetch stock quote: " + e.getMessage(), e);
         } catch (Exception e) {
