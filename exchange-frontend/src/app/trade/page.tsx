@@ -12,10 +12,14 @@ export default function TradePage() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [search, setSearch] = useState("");
 
+  // Fetch assets for the active tab (displayed in the list)
   const { assets, isLoading, isFetching, error, dataUpdatedAt } = useAssets({
     filter: activeTab === "all" ? "all" : activeTab === "stocks" ? "STOCK" : "CRYPTO",
     refetchInterval: 30_000,
   });
+
+  // Always fetch ALL assets so tab counts are accurate across tabs
+  const { assets: allAssets } = useAssets({ filter: "all", refetchInterval: 0 });
 
   useEffect(() => {
     if (error) {
@@ -101,9 +105,9 @@ export default function TradePage() {
             <div className="mt-4 flex flex-wrap gap-2">
               {(["all", "stocks", "crypto"] as Tab[]).map((tab) => {
                 const counts = {
-                  all: assets.length,
-                  stocks: assets.filter(a => a.type === "STOCK").length,
-                  crypto: assets.filter(a => a.type === "CRYPTO").length,
+                  all: allAssets.length,
+                  stocks: allAssets.filter(a => a.type === "STOCK").length,
+                  crypto: allAssets.filter(a => a.type === "CRYPTO").length,
                 };
                 return (
                   <button
