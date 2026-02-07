@@ -14,7 +14,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com/)
 [![JWT](https://img.shields.io/badge/JWT-Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 
-[Features](#-features) · [Tech Stack](#-tech-stack) · [Screenshots](#-screenshots) · [Getting Started](#-getting-started) · [API Integrations](#-api-integrations)
+[Screenshots](#-screenshots) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [API Integrations](#-api-integrations)
 
 </div>
 
@@ -22,7 +22,7 @@
 
 ## Overview
 
-**HD Investing Corporation** is a full-stack trading platform that unifies stock and cryptocurrency markets into a single, elegant interface. Users can create multiple portfolios, execute market/limit/stop-loss orders, track real-time prices, monitor performance with interactive charts, and manage a personal watchlist — all wrapped in a premium dark UI with gold accents.
+**HD Investing Corporation** is a full-stack trading platform that unifies stock and cryptocurrency markets into a single, elegant interface. Users can create multiple portfolios, execute market/limit/stop-loss orders, track real-time prices, monitor performance with interactive charts, and manage a personal watchlist, all wrapped in a premium dark UI with gold accents.
 
 Built as a production-grade monorepo with a **Spring Boot** REST API backend and a **Next.js** frontend, the platform integrates live market data from **Polygon.io** (stocks) and **Coinbase Exchange** (crypto), with **Redis**-powered caching and **PostgreSQL** persistence.
 
@@ -31,87 +31,102 @@ Built as a production-grade monorepo with a **Spring Boot** REST API backend and
 ## Screenshots
 
 ### Landing Page
+
 A sleek, branded entry point that sets the tone for the platform experience.
 
 <img src="screenshots/Landing_page_for_website.png" alt="Landing Page" width="850"/>
 
+**Features on this page:**
+- Premium black and gold branding with HD Investing Corporation logo
+- "Trade with Confidence" hero section with platform introduction
+- Sign In and Get Started navigation buttons
+- Responsive layout optimized for first impressions
+
 ---
 
 ### Authentication
-Secure sign-in page with JWT-based authentication. New users can register with a username, email, and password. Includes branded visuals and platform stats at a glance.
 
 <img src="screenshots/Sign_up.png" alt="Sign In Page" width="850"/>
+
+**Features on this page:**
+- JWT-based sign in with username or email and password
+- New user registration with "Create an Account" flow
+- Branded split-screen layout with logo and platform visuals
+- Platform stats at a glance: 24/7 Trading, 100+ Assets, Secure Platform
+- Terms of Service and Privacy Policy acknowledgement
 
 ---
 
 ### Dashboard
-Your financial command center. At a glance you can see total net worth, profit & loss, and available cash balance. Quick-access cards for your portfolios, watchlist, and pending limit orders. Deposit and withdraw cash directly from the dashboard.
 
 <img src="screenshots/Account_homepage.png" alt="Dashboard" width="850"/>
 
+**Features on this page:**
+- **Total Net Worth** summary card with real-time valuation
+- **Total P&L** card showing profit/loss amount and percentage
+- **Cash Balance** card displaying available funds for trading
+- **Deposit Cash** and **Withdraw** buttons for instant fund management
+- **Your Portfolios** section with cards showing each portfolio's total value, holdings count, and P&L
+- **Create Portfolio** button to add new portfolios
+- **Watchlist** widget showing starred assets (synced server-side across sessions)
+- **Pending Limit Orders** widget showing active limit orders waiting to execute
+
 ---
 
-### Markets — Trade Page
-Browse all available stocks and cryptocurrencies with live prices updated in real time. Filter by asset type (Stocks / Crypto), search by symbol or name, and click any asset to open the trading view. Each row shows the current price, 24h change, and change percentage with color-coded indicators.
+### Markets / Trade Page
 
 <img src="screenshots/crypto:stocks_trading_page.png" alt="Trade Page" width="850"/>
+
+**Features on this page:**
+- Browse all available stocks and cryptocurrencies in a unified list
+- **Tab filters** for All, Stocks, and Crypto with asset counts
+- **Search bar** to find assets by symbol or name
+- Live prices with 24h change amount and percentage (color-coded green/red)
+- **LIVE indicator** with last-updated timestamp
+- **Watchlist star** on each row to add/remove from your personal watchlist
+- Click any asset to open the detailed trading view with chart and order form
 
 ---
 
 ### Portfolio Management
-Create and manage multiple portfolios for different strategies — separate your long-term holdings from swing trades, or keep stocks and crypto in dedicated portfolios. Each card displays total value, number of holdings, and real-time P&L.
 
 <img src="screenshots/Multiple_portfolios_page.png" alt="Portfolios" width="850"/>
+
+**Features on this page:**
+- Create and manage **multiple portfolios** with custom names and descriptions
+- Each portfolio card displays total value, number of holdings, and real-time P&L
+- Separate portfolios for different strategies (e.g. Default, Goldman Sachs, JP Morgan Investments, Amazon Holdings)
+- **Create Portfolio** button with gold accent styling
+- Portfolio-level P&L tracking with green (profit) and red (loss) indicators
 
 ---
 
 ### Portfolio Performance
-Dive into any portfolio to see detailed performance analytics. Interactive line chart with configurable time intervals (1 Min, 5 Min, 15 Min, 1 Hour, 1 Day). Summary cards show total value, cost basis, and profit/loss with percentage. Below the chart, view individual holdings with quantity, average buy price, and current value.
 
 <img src="screenshots/Portfolio_performance.png" alt="Portfolio Performance" width="850"/>
+
+**Features on this page:**
+- **Total Value**, **Cost Basis**, and **Profit / Loss** summary cards at the top
+- **Interactive performance line chart** powered by Recharts
+- Configurable time intervals: 1 Min, 5 Min, 15 Min, 1 Hour, 1 Day
+- Data point count and time range displayed on the chart
+- **Holdings section** below the chart with per-asset breakdown (quantity, average buy price, current value)
+- First purchase date and current timestamp shown for time context
 
 ---
 
 ### Transaction History
-Complete audit trail of every order across all portfolios. Sortable table showing date, asset, order type (Buy/Sell/Deposit), execution status, quantity, price per unit, and total value. Color-coded labels make it easy to scan — green for buys, red for sells, yellow for deposits.
 
 <img src="screenshots/Transac_history_page.png" alt="Transaction History" width="850"/>
 
----
-
-## Features
-
-### Trading Engine
-- **Market Orders** — Instant buy/sell at the current market price
-- **Limit Orders** — Set a target price and the system automatically executes when the market reaches it
-- **Stop-Loss Orders** — Protect your positions with automated sell triggers
-- **Multi-Portfolio Support** — Choose which portfolio to trade from on every order
-- **Fractional Shares** — Buy any amount, down to 6 decimal places
-
-### Portfolio Management
-- **Multiple Portfolios** — Create unlimited portfolios with custom names and descriptions
-- **Real-Time Valuation** — Holdings are priced against live market data
-- **Performance Charts** — Interactive Recharts-powered graphs with 5 time intervals
-- **P&L Tracking** — Cost basis, current value, and profit/loss calculated per-holding and per-portfolio
-- **Cash Management** — Deposit and withdraw funds with full transaction records
-
-### Market Data
-- **Live Stock Prices** — Powered by Polygon.io with Redis caching (5-min TTL)
-- **Live Crypto Prices** — Powered by Coinbase Exchange API (no API key required)
-- **Historical Charts** — OHLCV candle data for both stocks and crypto
-- **24h Change Indicators** — Price change and percentage with color-coded up/down arrows
-
-### Watchlist
-- **Star any asset** from the trade page to add it to your personal watchlist
-- **Dashboard widget** shows your watchlist at a glance
-- **Synced across sessions** — watchlist is persisted server-side
-
-### User Experience
-- **Dark Premium UI** — Black and gold theme inspired by luxury financial platforms
-- **Responsive Design** — Fully functional on desktop and tablet
-- **Confetti on Buy** — A satisfying gold confetti burst celebrates every purchase
-- **Toast Notifications** — Real-time feedback via Sonner for every action
-- **Smooth Transitions** — Polished animations and hover states throughout
+**Features on this page:**
+- Complete audit trail of every order across all portfolios
+- Sortable table with columns: Date, Asset, Type, Status, Quantity, Price, Total
+- Color-coded order types: green for **BUY**, red for **SELL**, yellow for **DEPOSIT**
+- **COMPLETED** status badges on each executed order
+- Shows asset name and symbol for each transaction
+- Price per unit and total order value for full transparency
+- Covers all order types: market buys, sells, and cash deposits
 
 ---
 
@@ -123,11 +138,11 @@ Complete audit trail of every order across all portfolios. Sortable table showin
 |:--|:--|
 | ![Java](https://img.shields.io/badge/Java_17-ED8B00?logo=openjdk&logoColor=white) | Language runtime |
 | ![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.2-6DB33F?logo=springboot&logoColor=white) | REST API framework |
-| ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?logo=springsecurity&logoColor=white) | JWT authentication & authorization |
+| ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?logo=springsecurity&logoColor=white) | JWT authentication and authorization |
 | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white) | Relational database |
 | ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white) | Price caching, JWT blacklist, rate limiting |
-| ![Spring Data JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?logo=spring&logoColor=white) | ORM & repository layer |
-| ![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven&logoColor=white) | Build & dependency management |
+| ![Spring Data JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?logo=spring&logoColor=white) | ORM and repository layer |
+| ![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven&logoColor=white) | Build and dependency management |
 
 ### Frontend
 
@@ -136,7 +151,7 @@ Complete audit trail of every order across all portfolios. Sortable table showin
 | ![Next.js](https://img.shields.io/badge/Next.js_16-000000?logo=next.js&logoColor=white) | React framework with App Router |
 | ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178C6?logo=typescript&logoColor=white) | Type-safe development |
 | ![TailwindCSS](https://img.shields.io/badge/Tailwind_3-06B6D4?logo=tailwindcss&logoColor=white) | Utility-first styling |
-| ![React Query](https://img.shields.io/badge/TanStack_Query_5-FF4154?logo=reactquery&logoColor=white) | Server state & data fetching |
+| ![React Query](https://img.shields.io/badge/TanStack_Query_5-FF4154?logo=reactquery&logoColor=white) | Server state and data fetching |
 | ![Zustand](https://img.shields.io/badge/Zustand_4-433E38?logo=react&logoColor=white) | Client state management |
 | ![Recharts](https://img.shields.io/badge/Recharts_2-FF6384?logo=chart.js&logoColor=white) | Interactive performance charts |
 | ![Axios](https://img.shields.io/badge/Axios-5A29E4?logo=axios&logoColor=white) | HTTP client with JWT interceptor |
@@ -157,7 +172,7 @@ Complete audit trail of every order across all portfolios. Sortable table showin
 
 - **Java 17+** and **Maven 3.8+**
 - **Node.js 18+** and **npm**
-- **Docker & Docker Compose** (for PostgreSQL and Redis)
+- **Docker and Docker Compose** (for PostgreSQL and Redis)
 
 ### 1. Start Infrastructure
 
@@ -176,7 +191,7 @@ FINNHUB_API_KEY=your_finnhub_api_key
 ```
 
 > Polygon.io free tier provides 5 API calls/minute. Sign up at [polygon.io](https://polygon.io/) to get a key.
-> Crypto prices use the public Coinbase Exchange API — no key required.
+> Crypto prices use the public Coinbase Exchange API with no key required.
 
 ### 3. Start Backend
 
