@@ -11,8 +11,9 @@ export function PendingLimitOrders() {
     try {
       await cancelLimitOrder(orderId);
       toast.success(`Cancelled limit order for ${symbol}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to cancel order");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to cancel order");
     }
   };
 

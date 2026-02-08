@@ -182,8 +182,9 @@ export default function PortfolioDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders-portfolio", portfolioId] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
-    } catch (_err) {
-      toast.error("Trade failed. Check balance/holdings and try again.");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Trade failed. Check balance/holdings and try again.");
     } finally {
       setIsSubmitting(false);
     }

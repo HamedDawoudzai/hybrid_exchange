@@ -251,10 +251,22 @@ export function OrderForm({
         </div>
       </div>
 
+      {/* Validation Messages */}
+      {orderType === "BUY" && parseFloat(quantity || "0") > 0 && total > cashBalance && (
+        <p className="text-xs text-danger-500">Insufficient cash balance</p>
+      )}
+      {orderType === "SELL" && parseFloat(quantity || "0") > holdingQuantity && holdingQuantity > 0 && (
+        <p className="text-xs text-danger-500">Exceeds available holdings</p>
+      )}
+
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={isLoading || !quantity || parseFloat(quantity) <= 0 || !currentPrice}
+        disabled={
+          isLoading || !quantity || parseFloat(quantity) <= 0 || !currentPrice ||
+          (orderType === "BUY" && total > cashBalance) ||
+          (orderType === "SELL" && parseFloat(quantity) > holdingQuantity)
+        }
         className={`w-full py-3 text-sm font-semibold rounded transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
           orderType === "BUY"
             ? "bg-success-500 text-white hover:bg-success-600"
