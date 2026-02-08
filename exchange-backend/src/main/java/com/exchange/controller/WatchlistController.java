@@ -50,4 +50,3 @@ public class WatchlistController {
         return ResponseEntity.ok(ApiResponse.success(Map.of("inWatchlist", inWatchlist)));
     }
 }
-

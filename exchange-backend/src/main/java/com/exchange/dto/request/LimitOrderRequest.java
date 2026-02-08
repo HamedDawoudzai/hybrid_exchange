@@ -1,6 +1,7 @@
 package com.exchange.dto.request;
 
 import com.exchange.enums.OrderType;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,7 @@ public class LimitOrderRequest {
     @NotNull(message = "Portfolio ID is required")
     private Long portfolioId;
 
-    @NotNull(message = "Symbol is required")
+    @NotBlank(message = "Symbol is required")
     private String symbol;
 
     @NotNull(message = "Order type is required")

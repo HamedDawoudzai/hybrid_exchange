@@ -14,8 +14,9 @@ export function WatchlistPanel() {
     try {
       await removeFromWatchlist(symbol);
       toast.success(`Removed ${symbol} from watchlist`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to remove from watchlist");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to remove from watchlist");
     }
   };
 

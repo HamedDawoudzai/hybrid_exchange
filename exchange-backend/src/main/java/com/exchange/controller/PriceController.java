@@ -3,6 +3,7 @@ package com.exchange.controller;
 import com.exchange.dto.response.ApiResponse;
 import com.exchange.dto.response.PriceResponse;
 import com.exchange.enums.AssetType;
+import com.exchange.exception.BadRequestException;
 import com.exchange.service.PriceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -50,10 +51,18 @@ public class PriceController {
         return ResponseEntity.ok(ApiResponse.success(history));
     }
 
+    private static final int MAX_BATCH_SIZE = 50;
+
     @PostMapping("/batch")
     public ResponseEntity<ApiResponse<Map<String, PriceResponse>>> getBatchPrices(
             @RequestBody List<String> symbols,
             @RequestParam AssetType type) {
+        if (symbols == null || symbols.isEmpty()) {
+            throw new BadRequestException("Symbols list must not be empty");
+        }
+        if (symbols.size() > MAX_BATCH_SIZE) {
+            throw new BadRequestException("Batch size exceeds maximum of " + MAX_BATCH_SIZE + " symbols");
+        }
         Map<String, PriceResponse> prices = priceService.getPrices(symbols, type);
         return ResponseEntity.ok(ApiResponse.success(prices));
     }

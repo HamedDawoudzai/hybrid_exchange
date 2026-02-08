@@ -11,8 +11,9 @@ export function PendingStopOrders() {
     try {
       await cancelStopOrder(orderId);
       toast.success(`Cancelled stop-loss for ${symbol}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to cancel stop-loss");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to cancel stop-loss");
     }
   };
 

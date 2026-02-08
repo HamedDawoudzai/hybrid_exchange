@@ -35,7 +35,7 @@ export function LimitOrderForm({ symbol, currentPrice, portfolios, onSuccess }: 
     if (currentPrice > 0 && !targetPrice) {
       setTargetPrice(currentPrice.toFixed(2));
     }
-  }, [currentPrice]);
+  }, [currentPrice, targetPrice]);
 
   const selectedPortfolio = portfolios.find(p => p.id === portfolioId);
   const holdingQuantity = useMemo(() => {
@@ -117,8 +117,9 @@ export function LimitOrderForm({ symbol, currentPrice, portfolios, onSuccess }: 
       setTargetPrice("");
       setQuantity("");
       onSuccess?.();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create limit order");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to create limit order");
     }
   };
 
