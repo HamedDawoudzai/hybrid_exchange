@@ -77,7 +77,7 @@ export function PortfolioChart({
       
       // Add small random variance (±1%) for realism, except for last point
       const isLastPoint = timestamp >= now - intervalMs;
-      const variance = isLastPoint ? 0 : (Math.sin(i * 0.5) * 0.01 + (Math.random() - 0.5) * 0.005) * baseValue;
+      const variance = isLastPoint ? 0 : (Math.sin(i * 0.5) * 0.01 + Math.sin(i * 1.7) * 0.005) * baseValue;
       const value = Math.max(0, baseValue + variance);
       
       // Format time label

@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePrice, usePriceHistory } from "@/hooks/usePrices";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetApi, orderApi } from "@/lib/api";
-import type { OrderRequest, OrderType, Asset } from "@/types";
+import type { OrderRequest, OrderType, Asset, AssetType } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { fireGoldConfetti } from "@/lib/confetti";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ export default function TradeSymbolPage() {
 
   const assetType = asset?.type ?? "STOCK";
 
-  const { data: priceData, isLoading: isPriceLoading } = usePrice(symbol, assetType as any, 10_000);
+  const { data: priceData, isLoading: isPriceLoading } = usePrice(symbol, assetType as AssetType, 10_000);
 
   const now = Math.floor(Date.now() / 1000);
   const from = assetType === "STOCK" 
@@ -47,7 +47,7 @@ export default function TradeSymbolPage() {
   const resolutionOrGranularity = assetType === "STOCK" ? "D" : "3600";
   const { data: historyData, isLoading: isHistoryLoading } = usePriceHistory(
     symbol,
-    assetType as any,
+    assetType as AssetType,
     resolutionOrGranularity,
     from,
     now
@@ -96,8 +96,9 @@ export default function TradeSymbolPage() {
       queryClient.invalidateQueries({ queryKey: ["orders-portfolio", portfolioId] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
       router.refresh();
-    } catch (_err) {
-      toast.error("Failed to place order. Please try again.");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to place order. Please try again.");
     }
   };
 

@@ -31,10 +31,10 @@ export function StopLossForm({ symbol, currentPrice, portfolios, onSuccess }: St
 
   useEffect(() => {
     if (currentPrice > 0 && !stopPrice) {
-      // common pattern: set stop a bit below current, but leave blank to avoid assumptions
-      setStopPrice("");
+      // Pre-fill stop price at 5% below current market price
+      setStopPrice((currentPrice * 0.95).toFixed(2));
     }
-  }, [currentPrice]);
+  }, [currentPrice, stopPrice]);
 
   const selectedPortfolio = portfolios.find((p) => p.id === portfolioId);
   const holdingQuantity = useMemo(() => {
@@ -85,8 +85,9 @@ export function StopLossForm({ symbol, currentPrice, portfolios, onSuccess }: St
       setQuantity("");
       setSliderValue(0);
       onSuccess?.();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create stop-loss");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to create stop-loss");
     }
   };
 

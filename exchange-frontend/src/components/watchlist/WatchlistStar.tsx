@@ -40,8 +40,9 @@ export function WatchlistStar({ symbol, size = "md" }: WatchlistStarProps) {
         setIsInList(true);
         toast.success(`Added ${symbol} to watchlist`);
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update watchlist");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || "Failed to update watchlist");
     }
   };
 

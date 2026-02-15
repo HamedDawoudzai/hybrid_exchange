@@ -52,10 +52,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Basic response error pass-through (customize as needed)
+// Handle 401 responses by clearing auth state and redirecting to login
 api.interceptors.response.use(
   (res) => res,
-  (error) => Promise.reject(error)
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      const path = window.location.pathname;
+      // Don't redirect if already on auth pages
+      if (!path.startsWith("/login") && !path.startsWith("/register")) {
+        localStorage.removeItem("auth-store");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 /**
