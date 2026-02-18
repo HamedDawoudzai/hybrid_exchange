@@ -11,6 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface WatchlistRepository extends JpaRepository<WatchlistItem, Long> {
+
+    //custom interface to get watchlist items with specific functions that allow us to grab certain values from the database
     @Query("SELECT w FROM WatchlistItem w JOIN FETCH w.asset WHERE w.user.id = :userId ORDER BY w.createdAt DESC")
     List<WatchlistItem> findByUserIdWithAsset(@Param("userId") Long userId);
 
