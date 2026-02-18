@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface WatchlistRepository extends JpaRepository<WatchlistItem, Long> {
-
     @Query("SELECT w FROM WatchlistItem w JOIN FETCH w.asset WHERE w.user.id = :userId ORDER BY w.createdAt DESC")
     List<WatchlistItem> findByUserIdWithAsset(@Param("userId") Long userId);
 
@@ -29,4 +28,3 @@ public interface WatchlistRepository extends JpaRepository<WatchlistItem, Long> 
 
     void deleteByUserIdAndAssetSymbol(Long userId, String symbol);
 }
-

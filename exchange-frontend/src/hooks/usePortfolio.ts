@@ -66,7 +66,7 @@ export function usePortfolio(id: number) {
   const {
     data,
     isLoading,
-    error, 
+    error,
     refetch,
   } = useQuery<Portfolio | null>({
     queryKey: ["portfolio", id],
