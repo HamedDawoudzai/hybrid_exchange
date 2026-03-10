@@ -194,3 +194,17 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
 }
+
+// Chat types (for investing AI assistant)
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+}
+
+export interface ChatResponse {
+  content: string;
+}

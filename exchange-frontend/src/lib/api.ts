@@ -18,6 +18,8 @@ import type {
   StopOrder,
   StopOrderRequest,
   StopOrderStatus,
+  ChatRequest,
+  ChatResponse,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
@@ -154,6 +156,14 @@ export const limitOrderApi = {
     api.get<ApiResponse<LimitOrder[]>>("/limit-orders", { params: status ? { status } : {} }),
   getPending: () => api.get<ApiResponse<LimitOrder[]>>("/limit-orders/pending"),
   cancel: (orderId: number) => api.post<ApiResponse<LimitOrder>>(`/limit-orders/${orderId}/cancel`),
+};
+
+/**
+ * Chat AI API endpoints (investing assistant)
+ */
+export const chatApi = {
+  send: (data: ChatRequest) =>
+    api.post<ApiResponse<ChatResponse>>("/chat", data),
 };
 
 /**
