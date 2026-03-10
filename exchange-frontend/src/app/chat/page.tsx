@@ -76,7 +76,7 @@ export default function ChatPage() {
               </h2>
               <p className="text-sm text-neutral-500 max-w-md">
                 I can explain concepts, suggest strategies, and answer questions.
-                I don&apos;t give financial advice—always do your own research.
+                I don&apos;t give financial advice. Always do your own research.
               </p>
               <div className="flex flex-wrap justify-center gap-2 mt-8">
                 {[
