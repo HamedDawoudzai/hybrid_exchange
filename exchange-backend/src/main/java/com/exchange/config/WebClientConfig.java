@@ -3,6 +3,7 @@ package com.exchange.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Objects;
@@ -22,6 +23,12 @@ public class WebClientConfig {
 
     @Value("${app.polygon.base-url}")
     private String polygonBaseUrl;
+
+    @Value("${app.openai.base-url:https://api.openai.com}")
+    private String openaiBaseUrl;
+
+    @Value("${app.openai.api-key:}")
+    private String openaiApiKey;
 
     @Bean
     public WebClient finnhubWebClient() {
@@ -45,5 +52,15 @@ public class WebClientConfig {
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .build();
+    }
+
+    @Bean
+    public WebClient openaiWebClient() {
+        WebClient.Builder builder = WebClient.builder()
+                .baseUrl(openaiBaseUrl + "/v1");
+        if (openaiApiKey != null && !openaiApiKey.isBlank()) {
+            builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openaiApiKey);
+        }
+        return builder.build();
     }
 }
