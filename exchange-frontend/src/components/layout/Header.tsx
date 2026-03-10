@@ -42,6 +42,7 @@ export function Header() {
     { href: "/portfolio", label: "Portfolio" },
     { href: "/trade", label: "Trade" },
     { href: "/history", label: "History" },
+    { href: "/chat", label: "AI Chat" },
   ];
 
   return (
