@@ -21,59 +21,56 @@ import java.util.stream.Collectors;
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    private final WebClient openaiWebClient;
-
-    public ChatServiceImpl(@Qualifier("openaiWebClient") WebClient openaiWebClient) {
-        this.openaiWebClient = openaiWebClient;
-    }
+    private final WebClient ollamaWebClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${app.openai.api-key:}")
-    private String openaiApiKey;
-
-    @Value("${app.openai.model:gpt-4o-mini}")
+    @Value("${app.ollama.model:llama3.2}")
     private String model;
+
+    public ChatServiceImpl(@Qualifier("ollamaWebClient") WebClient ollamaWebClient) {
+        this.ollamaWebClient = ollamaWebClient;
+    }
 
     @Override
     public ChatResponse chat(ChatRequest request) {
-        if (openaiApiKey == null || openaiApiKey.isBlank()) {
-            throw new BadRequestException("OpenAI API key is not configured. Set OPENAI_API_KEY environment variable.");
-        }
-
-        List<ObjectNode> openaiMessages = request.getMessages().stream()
-                .map(this::toOpenAIMessage)
+        List<ObjectNode> messages = request.getMessages().stream()
+                .map(this::toOllamaMessage)
                 .collect(Collectors.toList());
 
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", model);
-        body.set("messages", objectMapper.valueToTree(openaiMessages));
+        body.put("stream", false);
+        body.set("messages", objectMapper.valueToTree(messages));
 
-        JsonNode response = openaiWebClient.post()
-                .uri("/chat/completions")
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode response;
+        try {
+            response = ollamaWebClient.post()
+                    .uri("/api/chat")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+        } catch (Exception e) {
+            log.warn("Ollama request failed: {}", e.getMessage());
+            throw new BadRequestException(
+                    "Ollama is not reachable. Ensure Ollama is running (ollama serve) and the model is pulled (ollama pull " + model + ").");
+        }
 
         if (response == null) {
             throw new BadRequestException("No response from AI service");
         }
 
-        JsonNode choices = response.get("choices");
-        if (choices == null || !choices.isArray() || choices.isEmpty()) {
-            throw new BadRequestException("Invalid AI response");
-        }
-
-        JsonNode firstChoice = choices.get(0);
-        JsonNode message = firstChoice != null ? firstChoice.get("message") : null;
-        String content = message != null && message.has("content") ? message.get("content").asText() : "";
+        JsonNode messageNode = response.get("message");
+        String content = messageNode != null && messageNode.has("content")
+                ? messageNode.get("content").asText()
+                : "";
 
         return ChatResponse.builder()
                 .content(content)
                 .build();
     }
 
-    private ObjectNode toOpenAIMessage(ChatMessageRequest msg) {
+    private ObjectNode toOllamaMessage(ChatMessageRequest msg) {
         ObjectNode node = objectMapper.createObjectNode();
         node.put("role", msg.getRole());
         node.put("content", msg.getContent());

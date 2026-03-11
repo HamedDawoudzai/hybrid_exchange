@@ -44,8 +44,7 @@ app:
   coinbase:
     base-url: https://api.exchange.coinbase.com
 
-  openai:
-    api-key: ${OPENAI_API_KEY:}
-    base-url: https://api.openai.com
-    model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_CHAT_MODEL:llama3.2}
 
