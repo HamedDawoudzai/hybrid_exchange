@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI Chat Setup (Ollama)
 
 The investing chatbot uses **Ollama** for free, local AI. No API key needed.
@@ -33,6 +34,23 @@ ollama serve
 
 - `OLLAMA_BASE_URL` – default `http://localhost:11434`
 - `OLLAMA_CHAT_MODEL` – default `llama3.2`
+=======
+# AI Chat Setup
+
+The investing chatbot uses OpenAI's API. To enable it:
+
+1. Create an [OpenAI API key](https://platform.openai.com/api-keys)
+2. Set the environment variable:
+   ```
+   OPENAI_API_KEY=sk-your-key-here
+   ```
+3. Optional: override the model (default: `gpt-4o-mini`):
+   ```
+   OPENAI_CHAT_MODEL=gpt-4o-mini
+   ```
+
+Without an API key, the chat will return an error asking you to configure it.
+>>>>>>> 90fc59641b466ef94c47c5e44a3f577324ba9f89
 
 ## Future: RAG & Vector DB
 
