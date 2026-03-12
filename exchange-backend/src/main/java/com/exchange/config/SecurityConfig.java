@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/prices/**").permitAll()
                         .requestMatchers("/api/assets/**").permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/api/rag/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
