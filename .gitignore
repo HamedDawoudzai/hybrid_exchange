@@ -18,3 +18,14 @@ logs/
 .env.local
 .env.*.local
 
+# Next.js build output
+exchange-frontend/.next/
+exchange-frontend/out/
+
+# Node
+node_modules/
+.npm
+.eslintcache
+
+# Build artifacts
+*.tsbuildinfo
