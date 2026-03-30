@@ -54,3 +54,14 @@ app:
     top-k: ${RAG_TOP_K:3}
     similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.5}
 
+  rate-limit:
+    login:
+      max-requests: ${RATE_LIMIT_LOGIN_MAX:5}
+      window-seconds: ${RATE_LIMIT_LOGIN_WINDOW:60}
+    register:
+      max-requests: ${RATE_LIMIT_REGISTER_MAX:5}
+      window-seconds: ${RATE_LIMIT_REGISTER_WINDOW:60}
+    prices:
+      max-requests: ${RATE_LIMIT_PRICES_MAX:120}
+      window-seconds: ${RATE_LIMIT_PRICES_WINDOW:60}
+
