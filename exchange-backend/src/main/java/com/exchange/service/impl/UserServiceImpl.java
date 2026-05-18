@@ -16,6 +16,7 @@ import com.exchange.repository.LimitOrderRepository;
 import com.exchange.repository.OrderRepository;
 import com.exchange.repository.PortfolioRepository;
 import com.exchange.repository.UserRepository;
+import com.exchange.service.AccountLockService;
 import com.exchange.service.UserService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private static final String CASH_ASSET_SYMBOL = "CASH";
 
     private final UserRepository userRepository;
+    private final AccountLockService accountLockService;
     private final LimitOrderRepository limitOrderRepository;
     private final AssetRepository assetRepository;
     private final PortfolioRepository portfolioRepository;
@@ -95,10 +97,10 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Deposit amount exceeds the allowed limit");
         }
 
-        User user = findById(userId);
+        User user = accountLockService.requireUserForUpdate(userId);
         user.setCashBalance(user.getCashBalance().add(amount));
         user.setTotalDeposits(user.getTotalDeposits().add(amount));
-        User saved = userRepository.save(user);
+        User saved = user;
         
         // Create transaction record for deposit
         createCashTransaction(userId, amount, OrderType.DEPOSIT, "Deposit");
@@ -117,7 +119,7 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Withdrawal amount must be positive");
         }
 
-        User user = findById(userId);
+        User user = accountLockService.requireUserForUpdate(userId);
         BigDecimal currentBalance = user.getCashBalance();
 
         if (currentBalance.compareTo(amount) < 0) {
@@ -128,7 +130,7 @@ public class UserServiceImpl implements UserService {
 
         user.setCashBalance(currentBalance.subtract(amount));
         user.setTotalWithdrawals(user.getTotalWithdrawals().add(amount));
-        User saved = userRepository.save(user);
+        User saved = user;
         
         // Create transaction record for withdrawal
         createCashTransaction(userId, amount, OrderType.WITHDRAW, "Withdrawal");

@@ -10,17 +10,22 @@ import com.exchange.exception.BadRequestException;
 import com.exchange.exception.InsufficientBalanceException;
 import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.*;
+import com.exchange.service.AccountLockService;
 import com.exchange.service.LimitOrderService;
 import com.exchange.service.PriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,18 +34,21 @@ import java.util.stream.Collectors;
 public class LimitOrderServiceImpl implements LimitOrderService {
 
     private final LimitOrderRepository limitOrderRepository;
-    private final UserRepository userRepository;
     private final PortfolioRepository portfolioRepository;
     private final AssetRepository assetRepository;
     private final HoldingRepository holdingRepository;
     private final OrderRepository orderRepository;
     private final PriceService priceService;
+    private final AccountLockService accountLockService;
+
+    @Lazy
+    @Autowired
+    private LimitOrderServiceImpl self;
 
     @Override
     @Transactional
     public LimitOrderResponse createLimitOrder(Long userId, LimitOrderRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        User user = accountLockService.requireUserForUpdate(userId);
 
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(request.getPortfolioId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", request.getPortfolioId()));
@@ -51,7 +59,6 @@ public class LimitOrderServiceImpl implements LimitOrderService {
         BigDecimal reservedAmount = BigDecimal.ZERO;
 
         if (request.getType() == OrderType.BUY) {
-            // For BUY orders, reserve cash = targetPrice * quantity
             reservedAmount = request.getTargetPrice()
                     .multiply(request.getQuantity())
                     .setScale(4, RoundingMode.HALF_UP);
@@ -62,14 +69,11 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                                 reservedAmount, user.getCashBalance()));
             }
 
-            // Reserve the cash
             user.setCashBalance(user.getCashBalance().subtract(reservedAmount));
-            userRepository.save(user);
             log.info("Reserved {} for limit buy order", reservedAmount);
 
         } else if (request.getType() == OrderType.SELL) {
-            // For SELL orders, verify user has enough holdings
-            Holding holding = holdingRepository.findByPortfolioIdAndAssetId(portfolio.getId(), asset.getId())
+            Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                     .orElseThrow(() -> new InsufficientBalanceException(
                             String.format("No holdings of %s found in portfolio", request.getSymbol())));
 
@@ -79,8 +83,6 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                                 request.getQuantity(), holding.getQuantity()));
             }
 
-            // Note: For sell orders, we don't reserve holdings - we check at fill time
-            // This allows the user to still hold the asset
             reservedAmount = BigDecimal.ZERO;
         }
 
@@ -142,7 +144,7 @@ public class LimitOrderServiceImpl implements LimitOrderService {
     @Override
     @Transactional
     public LimitOrderResponse cancelLimitOrder(Long userId, Long orderId) {
-        LimitOrder limitOrder = limitOrderRepository.findById(orderId)
+        LimitOrder limitOrder = limitOrderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Limit Order", "id", orderId));
 
         if (!limitOrder.getUser().getId().equals(userId)) {
@@ -153,11 +155,9 @@ public class LimitOrderServiceImpl implements LimitOrderService {
             throw new BadRequestException("Cannot cancel order with status: " + limitOrder.getStatus());
         }
 
-        // Refund reserved amount for BUY orders
         if (limitOrder.getType() == OrderType.BUY && limitOrder.getReservedAmount().compareTo(BigDecimal.ZERO) > 0) {
-            User user = limitOrder.getUser();
+            User user = accountLockService.requireUserForUpdate(userId);
             user.setCashBalance(user.getCashBalance().add(limitOrder.getReservedAmount()));
-            userRepository.save(user);
             log.info("Refunded {} to user {} for cancelled limit order {}",
                     limitOrder.getReservedAmount(), userId, orderId);
         }
@@ -170,7 +170,6 @@ public class LimitOrderServiceImpl implements LimitOrderService {
     }
 
     @Override
-    @Transactional
     public void checkAndFillLimitOrders() {
         List<LimitOrder> pendingOrders = limitOrderRepository.findAllPendingWithDetails(LimitOrderStatus.PENDING);
 
@@ -184,15 +183,13 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                 boolean shouldFill = false;
 
                 if (order.getType() == OrderType.BUY) {
-                    // Fill BUY order if current price <= target price
                     shouldFill = currentPrice.compareTo(order.getTargetPrice()) <= 0;
                 } else if (order.getType() == OrderType.SELL) {
-                    // Fill SELL order if current price >= target price
                     shouldFill = currentPrice.compareTo(order.getTargetPrice()) >= 0;
                 }
 
                 if (shouldFill) {
-                    fillLimitOrder(order, currentPrice);
+                    self.fillLimitOrder(order.getId(), currentPrice);
                 }
 
             } catch (Exception e) {
@@ -201,25 +198,30 @@ public class LimitOrderServiceImpl implements LimitOrderService {
         }
     }
 
-    @Transactional
-    protected void fillLimitOrder(LimitOrder limitOrder, BigDecimal fillPrice) {
-        User user = limitOrder.getUser();
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void fillLimitOrder(Long limitOrderId, BigDecimal fillPrice) {
+        LimitOrder limitOrder = limitOrderRepository.findByIdForUpdate(limitOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Limit Order", "id", limitOrderId));
+
+        if (limitOrder.getStatus() != LimitOrderStatus.PENDING) {
+            return;
+        }
+
+        Long userId = limitOrder.getUser().getId();
         Portfolio portfolio = limitOrder.getPortfolio();
         Asset asset = limitOrder.getAsset();
 
+        User user = accountLockService.requireUserForUpdate(userId);
         BigDecimal totalAmount = fillPrice.multiply(limitOrder.getQuantity()).setScale(4, RoundingMode.HALF_UP);
 
         if (limitOrder.getType() == OrderType.BUY) {
-            // For BUY: use reserved amount, add to holdings
-            // If fill price is lower than expected, refund the difference
             BigDecimal refund = limitOrder.getReservedAmount().subtract(totalAmount);
             if (refund.compareTo(BigDecimal.ZERO) > 0) {
                 user.setCashBalance(user.getCashBalance().add(refund));
                 log.info("Refunding {} due to favorable fill price", refund);
             }
 
-            // Update or create holding
-            Holding holding = holdingRepository.findByPortfolioIdAndAssetId(portfolio.getId(), asset.getId())
+            Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                     .orElse(Holding.builder()
                             .portfolio(portfolio)
                             .asset(asset)
@@ -227,9 +229,8 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                             .averageBuyPrice(BigDecimal.ZERO)
                             .build());
 
-            // Handle null averageBuyPrice (shouldn't happen, but safety check)
-            BigDecimal avgPrice = holding.getAverageBuyPrice() != null 
-                    ? holding.getAverageBuyPrice() 
+            BigDecimal avgPrice = holding.getAverageBuyPrice() != null
+                    ? holding.getAverageBuyPrice()
                     : BigDecimal.ZERO;
             BigDecimal oldCost = holding.getQuantity().multiply(avgPrice);
             BigDecimal newQuantity = holding.getQuantity().add(limitOrder.getQuantity());
@@ -242,12 +243,10 @@ public class LimitOrderServiceImpl implements LimitOrderService {
             holdingRepository.save(holding);
 
         } else if (limitOrder.getType() == OrderType.SELL) {
-            // For SELL: reduce holdings, add cash
-            Holding holding = holdingRepository.findByPortfolioIdAndAssetId(portfolio.getId(), asset.getId())
+            Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                     .orElse(null);
 
             if (holding == null || holding.getQuantity().compareTo(limitOrder.getQuantity()) < 0) {
-                // Insufficient holdings at fill time - cancel the order
                 limitOrder.setStatus(LimitOrderStatus.CANCELLED);
                 limitOrderRepository.save(limitOrder);
                 log.warn("Limit sell order {} cancelled due to insufficient holdings", limitOrder.getId());
@@ -265,9 +264,6 @@ public class LimitOrderServiceImpl implements LimitOrderService {
             user.setCashBalance(user.getCashBalance().add(totalAmount));
         }
 
-        userRepository.save(user);
-
-        // Create order record
         Order order = Order.builder()
                 .portfolio(portfolio)
                 .asset(asset)
@@ -277,9 +273,8 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                 .pricePerUnit(fillPrice)
                 .totalAmount(totalAmount)
                 .build();
-        orderRepository.save(order);
+        orderRepository.save(Objects.requireNonNull(order, "order must not be null"));
 
-        // Update limit order
         limitOrder.setStatus(LimitOrderStatus.FILLED);
         limitOrder.setFilledAt(LocalDateTime.now());
         limitOrder.setFilledPrice(fillPrice);
@@ -290,4 +285,3 @@ public class LimitOrderServiceImpl implements LimitOrderService {
                 limitOrder.getQuantity(), asset.getSymbol(), fillPrice);
     }
 }
-

@@ -3,13 +3,16 @@ package com.exchange.repository;
 import com.exchange.entity.LimitOrder;
 import com.exchange.enums.LimitOrderStatus;
 import com.exchange.enums.OrderType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository for {@link LimitOrder}.
@@ -57,5 +60,10 @@ public interface LimitOrderRepository extends JpaRepository<LimitOrder, Long> {
             @Param("status") LimitOrderStatus status,
             @Param("type") OrderType type
     );
+
+    /** Loads a limit order with a pessimistic write lock for fill/cancel. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT lo FROM LimitOrder lo JOIN FETCH lo.user JOIN FETCH lo.portfolio JOIN FETCH lo.asset WHERE lo.id = :id")
+    Optional<LimitOrder> findByIdForUpdate(@Param("id") Long id);
 }
 

@@ -1,7 +1,9 @@
 package com.exchange.repository;
 
 import com.exchange.entity.Holding;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -29,5 +31,12 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
     /** Finds the holding for a portfolio and asset by symbol. */
     @Query("SELECT h FROM Holding h WHERE h.portfolio.id = :portfolioId AND h.asset.symbol = :symbol")
     Optional<Holding> findByPortfolioIdAndAssetSymbol(@Param("portfolioId") Long portfolioId, @Param("symbol") String symbol);
+
+    /** Loads a holding with a pessimistic write lock for quantity updates. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT h FROM Holding h JOIN FETCH h.asset WHERE h.portfolio.id = :portfolioId AND h.asset.id = :assetId")
+    Optional<Holding> findByPortfolioIdAndAssetIdForUpdate(
+            @Param("portfolioId") Long portfolioId,
+            @Param("assetId") Long assetId);
 }
 

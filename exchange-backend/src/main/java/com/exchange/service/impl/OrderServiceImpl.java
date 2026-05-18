@@ -6,6 +6,7 @@ import com.exchange.entity.Asset;
 import com.exchange.entity.Holding;
 import com.exchange.entity.Order;
 import com.exchange.entity.Portfolio;
+import com.exchange.entity.User;
 import com.exchange.enums.OrderStatus;
 import com.exchange.enums.OrderType;
 import com.exchange.exception.BadRequestException;
@@ -14,7 +15,7 @@ import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.HoldingRepository;
 import com.exchange.repository.OrderRepository;
 import com.exchange.repository.PortfolioRepository;
-import com.exchange.repository.UserRepository;
+import com.exchange.service.AccountLockService;
 import com.exchange.service.AssetService;
 import com.exchange.service.OrderService;
 import com.exchange.service.PriceService;
@@ -37,7 +38,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final PortfolioRepository portfolioRepository;
     private final HoldingRepository holdingRepository;
-    private final UserRepository userRepository;
+    private final AccountLockService accountLockService;
     private final AssetService assetService;
     private final PriceService priceService;
 
@@ -47,7 +48,7 @@ public class OrderServiceImpl implements OrderService {
         Portfolio portfolio = portfolioRepository.findByIdAndUserId(request.getPortfolioId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", request.getPortfolioId()));
 
-        var user = portfolio.getUser();
+        User user = accountLockService.requireUserForUpdate(userId);
 
         Asset asset = assetService.findBySymbol(request.getSymbol());
 
@@ -101,8 +102,7 @@ public class OrderServiceImpl implements OrderService {
 
             user.setCashBalance(cashBalance.subtract(totalAmount));
 
-            Holding holding = holdingRepository.findByPortfolioIdAndAssetId(
-                            portfolio.getId(), asset.getId())
+            Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                     .orElse(Holding.builder()
                             .portfolio(portfolio)
                             .asset(asset)
@@ -128,8 +128,7 @@ public class OrderServiceImpl implements OrderService {
             holdingRepository.save(holding);
 
         } else if (request.getType() == OrderType.SELL) {
-            Holding holding = holdingRepository.findByPortfolioIdAndAssetId(
-                            portfolio.getId(), asset.getId())
+            Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                     .orElseThrow(() -> new InsufficientBalanceException(
                             String.format("Insufficient holdings. You don't own any %s", request.getSymbol())));
 
@@ -160,8 +159,6 @@ public class OrderServiceImpl implements OrderService {
         } else {
             throw new BadRequestException("Invalid order type: " + request.getType());
         }
-
-        userRepository.save(user);
 
         Order order = Order.builder()
                 .portfolio(portfolio)

@@ -13,17 +13,22 @@ import com.exchange.exception.BadRequestException;
 import com.exchange.exception.InsufficientBalanceException;
 import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.*;
+import com.exchange.service.AccountLockService;
 import com.exchange.service.PriceService;
 import com.exchange.service.StopOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,18 +37,21 @@ import java.util.stream.Collectors;
 public class StopOrderServiceImpl implements StopOrderService {
 
     private final StopOrderRepository stopOrderRepository;
-    private final UserRepository userRepository;
     private final PortfolioRepository portfolioRepository;
     private final AssetRepository assetRepository;
     private final HoldingRepository holdingRepository;
     private final OrderRepository orderRepository;
     private final PriceService priceService;
+    private final AccountLockService accountLockService;
+
+    @Lazy
+    @Autowired
+    private StopOrderServiceImpl self;
 
     @Override
     @Transactional
     public StopOrderResponse createStopOrder(Long userId, StopOrderRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        User user = accountLockService.requireUserForUpdate(userId);
 
         var portfolio = portfolioRepository.findByIdAndUserId(request.getPortfolioId(), userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", request.getPortfolioId()));
@@ -55,8 +63,7 @@ public class StopOrderServiceImpl implements StopOrderService {
             throw new BadRequestException("Stop orders currently support SELL (stop-loss) only");
         }
 
-        // Validate holdings at creation
-        Holding holding = holdingRepository.findByPortfolioIdAndAssetId(portfolio.getId(), asset.getId())
+        Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                 .orElseThrow(() -> new InsufficientBalanceException(
                         String.format("No holdings of %s found in portfolio", request.getSymbol())));
 
@@ -98,7 +105,7 @@ public class StopOrderServiceImpl implements StopOrderService {
     @Override
     @Transactional
     public StopOrderResponse cancelStopOrder(Long userId, Long orderId) {
-        StopOrder order = stopOrderRepository.findById(orderId)
+        StopOrder order = stopOrderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stop Order", "id", orderId));
 
         if (!order.getUser().getId().equals(userId)) {
@@ -117,7 +124,6 @@ public class StopOrderServiceImpl implements StopOrderService {
     }
 
     @Override
-    @Transactional
     public void checkAndTriggerStopOrders() {
         List<StopOrder> pendingOrders = stopOrderRepository.findAllPendingWithDetails(StopOrderStatus.PENDING);
 
@@ -128,15 +134,11 @@ public class StopOrderServiceImpl implements StopOrderService {
                         order.getAsset().getType()
                 );
 
-                boolean shouldTrigger = false;
-
-                // Stop-loss SELL: trigger when price <= stopPrice
-                if (order.getType() == OrderType.SELL) {
-                    shouldTrigger = currentPrice.compareTo(order.getStopPrice()) <= 0;
-                }
+                boolean shouldTrigger = order.getType() == OrderType.SELL
+                        && currentPrice.compareTo(order.getStopPrice()) <= 0;
 
                 if (shouldTrigger) {
-                    triggerStopOrder(order, currentPrice);
+                    self.triggerStopOrder(order.getId(), currentPrice);
                 }
 
             } catch (Exception e) {
@@ -145,25 +147,31 @@ public class StopOrderServiceImpl implements StopOrderService {
         }
     }
 
-    @Transactional
-    protected void triggerStopOrder(StopOrder stopOrder, BigDecimal fillPrice) {
-        var user = stopOrder.getUser();
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void triggerStopOrder(Long stopOrderId, BigDecimal fillPrice) {
+        StopOrder stopOrder = stopOrderRepository.findByIdForUpdate(stopOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stop Order", "id", stopOrderId));
+
+        if (stopOrder.getStatus() != StopOrderStatus.PENDING) {
+            return;
+        }
+
+        Long userId = stopOrder.getUser().getId();
         var portfolio = stopOrder.getPortfolio();
         var asset = stopOrder.getAsset();
 
-        // Validate holdings at trigger time
-        Holding holding = holdingRepository.findByPortfolioIdAndAssetId(portfolio.getId(), asset.getId())
+        User user = accountLockService.requireUserForUpdate(userId);
+
+        Holding holding = accountLockService.findHoldingForUpdate(portfolio.getId(), asset.getId())
                 .orElse(null);
 
         if (holding == null || holding.getQuantity().compareTo(stopOrder.getQuantity()) < 0) {
-            // Insufficient holdings; cancel
             stopOrder.setStatus(StopOrderStatus.CANCELLED);
             stopOrderRepository.save(stopOrder);
             log.warn("Stop order {} cancelled due to insufficient holdings at trigger", stopOrder.getId());
             return;
         }
 
-        // Execute as market sell at current price
         BigDecimal totalAmount = fillPrice.multiply(stopOrder.getQuantity()).setScale(4, RoundingMode.HALF_UP);
 
         BigDecimal newQty = holding.getQuantity().subtract(stopOrder.getQuantity());
@@ -175,9 +183,7 @@ public class StopOrderServiceImpl implements StopOrderService {
         }
 
         user.setCashBalance(user.getCashBalance().add(totalAmount));
-        userRepository.save(user);
 
-        // Record order history
         var orderRecord = com.exchange.entity.Order.builder()
                 .portfolio(portfolio)
                 .asset(asset)
@@ -187,7 +193,7 @@ public class StopOrderServiceImpl implements StopOrderService {
                 .pricePerUnit(fillPrice)
                 .totalAmount(totalAmount)
                 .build();
-        orderRepository.save(orderRecord);
+        orderRepository.save(Objects.requireNonNull(orderRecord, "orderRecord must not be null"));
 
         stopOrder.setStatus(StopOrderStatus.FILLED);
         stopOrder.setTriggeredAt(LocalDateTime.now());
@@ -215,4 +221,3 @@ public class StopOrderServiceImpl implements StopOrderService {
                 .collect(Collectors.toList());
     }
 }
-

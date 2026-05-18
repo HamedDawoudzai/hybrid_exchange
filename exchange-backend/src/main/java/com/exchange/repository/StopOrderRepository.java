@@ -2,12 +2,15 @@ package com.exchange.repository;
 
 import com.exchange.entity.StopOrder;
 import com.exchange.enums.StopOrderStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository for {@link StopOrder}.
@@ -33,5 +36,10 @@ public interface StopOrderRepository extends JpaRepository<StopOrder, Long> {
 
     /** Deletes all stop orders belonging to the given portfolio. */
     void deleteByPortfolioId(Long portfolioId);
+
+    /** Loads a stop order with a pessimistic write lock for trigger/cancel. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT so FROM StopOrder so JOIN FETCH so.user JOIN FETCH so.portfolio JOIN FETCH so.asset WHERE so.id = :id")
+    Optional<StopOrder> findByIdForUpdate(@Param("id") Long id);
 }
 

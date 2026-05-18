@@ -12,6 +12,7 @@ import com.exchange.exception.ResourceNotFoundException;
 import com.exchange.repository.HoldingRepository;
 import com.exchange.repository.PortfolioRepository;
 import com.exchange.repository.UserRepository;
+import com.exchange.service.AccountLockService;
 import com.exchange.service.PortfolioService;
 import com.exchange.service.PriceService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
     private final UserRepository userRepository;
+    private final AccountLockService accountLockService;
     private final HoldingRepository holdingRepository;
     private final PriceService priceService;
     private final com.exchange.repository.OrderRepository orderRepository;
@@ -142,9 +144,8 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
         // Deposit goes to user's cash balance, not portfolio
-        User user = portfolio.getUser();
+        User user = accountLockService.requireUserForUpdate(userId);
         user.setCashBalance(user.getCashBalance().add(request.getAmount()));
-        userRepository.save(user);
 
         log.info("Deposit made: User ID {}, Amount {}", userId, request.getAmount());
 
